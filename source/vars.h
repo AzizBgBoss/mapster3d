@@ -5,7 +5,7 @@ typedef struct
     float speed;
 } Player;
 
-Player player = {0, 0, 0, 0, 0, 0.05f};
+Player player = {0, 0, 0, 0, 0, 0.02f};
 
 typedef struct
 {

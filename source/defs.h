@@ -3,4 +3,4 @@
 
 #define TERRAIN_SIZE 32
 #define SCALE 0.25f
-#define RENDER 5.0f
+#define RENDER 5.0f 

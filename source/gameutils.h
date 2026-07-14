@@ -47,6 +47,7 @@ bool createModel(float x, float y, float z, float pitch, float yaw, float roll, 
             NE_ModelSetMaterial(Scene.Model[i], mat);
             NE_ModelSetCoord(Scene.Model[i], x, y, z);
             NE_ModelSetRot(Scene.Model[i], pitch, yaw, roll);
+            NE_ModelScale(Scene.Model[i], SCALE, SCALE, SCALE);
             return true;
         }
     }

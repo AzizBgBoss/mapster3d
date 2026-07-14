@@ -31,7 +31,7 @@ void Draw3DScene(void *arg)
         0,
         NE_LIGHT_ALL,
         NE_CULL_NONE,
-        NE_MODULATION);
+        NE_FOG_ENABLE);
 
     NE_MaterialUse(TerrainMaterial);
 
@@ -103,9 +103,12 @@ void Draw3DScene(void *arg)
     NE_PolyEnd();
 
     for (int i = 0; i < NUM_MODELS; i++)
-        NE_ModelDraw(Scene->Model[i]);
+        if (Scene->activeModel[i] && Scene->Model[i]->x / 4096.0f > camX - RENDER && Scene->Model[i]->x / 4096.0f < camX + RENDER &&
+            Scene->Model[i]->y / 4096.0f > camY - RENDER && Scene->Model[i]->y / 4096.0f < camY + RENDER &&
+            Scene->Model[i]->z / 4096.0f > camZ - RENDER && Scene->Model[i]->z / 4096.0f < camZ + RENDER)
+            NE_ModelDraw(Scene->Model[i]);
 
-    printf("\nPolys: %d\nVertices: %d\nCPU: %d%%",
+    printf("\nPolys: %d        \nVertices: %d         \nCPU: %d%%       ",
            NE_GetPolygonCount(), NE_GetVertexCount(), NE_GetCPUPercent());
 }
 
@@ -120,7 +123,7 @@ int main(int argc, char *argv[])
         for (int z = 0; z < TERRAIN_SIZE; z++)
         {
             terrainVertices[x][z][0] = (x - TERRAIN_SIZE / 2.0f) * SCALE;
-            terrainVertices[x][z][1] = fractalPerlin2D(x * 0.1f, z * 0.1f, 1, 0.5f, 1.0f, seed) * 3.0f * SCALE;
+            terrainVertices[x][z][1] = fractalPerlin2D(x * 0.1f * SCALE / 0.25f, z * 0.1f * SCALE / 0.25f, 1, 0.5f, 1.0f, seed) * 0.75f;
             terrainVertices[x][z][2] = (z - TERRAIN_SIZE / 2.0f) * SCALE;
         }
     }
@@ -148,7 +151,10 @@ int main(int argc, char *argv[])
     irqSet(IRQ_HBLANK, NE_HBLFunc);
 
     NE_Init3D();
+    NE_SetFov(60);
+    NE_ClippingPlanesSet(0.05, 40);
     NE_ClearColorSet(RGB15(10, 20, 31), 63, 0);
+    NE_FogEnable(5, RGB15(10, 20, 31), 31, 2, 0x7C00); // shift, color, density, mass, depth
 
     // libnds uses VRAM_C for the text console, reserve A and B only
     NE_TextureSystemReset(0, 0, NE_VRAM_AB);
@@ -233,11 +239,11 @@ int main(int argc, char *argv[])
 
         NE_CameraSet(Scene.Camera,
                      player.x,
-                     player.y + 0.2f,
+                     player.y + 0.1f,
                      player.z,
 
                      player.x + cosf(player.pitch) * sinf(player.yaw),
-                     player.y + 0.2f + sinf(player.pitch),
+                     player.y + 0.1f + sinf(player.pitch),
                      player.z + cosf(player.pitch) * cosf(player.yaw),
 
                      0, 1, 0);
@@ -255,7 +261,7 @@ int main(int argc, char *argv[])
 
         printf("\x1b[0;0HPad: Rotate.\nA/B: Move forward/back.");
         printf("\nSeed: %d, Keys: %08X", seed, keys);
-        printf("\x1b[15;0HPos: %.2f %.2f %.2f", player.x, player.y, player.z);
+        printf("\x1b[15;0HPos: %.2f %.2f %.2f   ", player.x, player.y, player.z);
 
         NE_ProcessArg(Draw3DScene, &Scene);
         fpscount++;
