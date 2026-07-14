@@ -10,55 +10,13 @@ Yours truly, past AzizBgBoss
 #include <time.h>
 #include <math.h>
 
+#include "cube_bin.h"
+#include "texture.h"
+
+#include "defs.h"
+#include "vars.h"
 #include "mathutils.h"
-
-#define TERRAIN_SIZE 32
-#define SCALE 0.25f
-#define RENDER 5.0f
-
-typedef struct
-{
-    NE_Camera *Camera;
-} SceneData;
-
-NE_Material *TerrainMaterial;
-
-typedef struct
-{
-    float x, y, z;
-    float pitch, yaw;
-    float speed;
-} Player;
-
-Player player = {0, 0, 0, 0, 0, 0.05f};
-
-float terrainVertices[TERRAIN_SIZE][TERRAIN_SIZE][3] = {0};
-float terrainNormal[TERRAIN_SIZE - 1][TERRAIN_SIZE - 1][2][3] = {0};
-
-float getHeightAt(float x, float z)
-{
-    float gx = x / SCALE + TERRAIN_SIZE / 2.0f;
-    float gz = z / SCALE + TERRAIN_SIZE / 2.0f;
-
-    int x0 = (int)gx;
-    int z0 = (int)gz;
-
-    if (x0 < 0 || z0 < 0 || x0 >= TERRAIN_SIZE - 1 || z0 >= TERRAIN_SIZE - 1)
-        return 0;
-
-    float tx = gx - x0;
-    float tz = gz - z0;
-
-    float h00 = terrainVertices[x0][z0][1];
-    float h10 = terrainVertices[x0+1][z0][1];
-    float h01 = terrainVertices[x0][z0+1][1];
-    float h11 = terrainVertices[x0+1][z0+1][1];
-
-    float h0 = h00 + (h10 - h00) * tx;
-    float h1 = h01 + (h11 - h01) * tx;
-
-    return h0 + (h1 - h0) * tz;
-}
+#include "gameutils.h"
 
 void Draw3DScene(void *arg)
 {
@@ -143,6 +101,12 @@ void Draw3DScene(void *arg)
     }
 
     NE_PolyEnd();
+
+    for (int i = 0; i < NUM_MODELS; i++)
+        NE_ModelDraw(Scene->Model[i]);
+
+    printf("\nPolys: %d\nVertices: %d\nCPU: %d%%",
+           NE_GetPolygonCount(), NE_GetVertexCount(), NE_GetCPUPercent());
 }
 
 int main(int argc, char *argv[])
@@ -179,8 +143,6 @@ int main(int argc, char *argv[])
 
     player.y = getHeightAt(player.x, player.z);
 
-    SceneData Scene = {0};
-
     irqEnable(IRQ_HBLANK);
     irqSet(IRQ_VBLANK, NE_VBLFunc);
     irqSet(IRQ_HBLANK, NE_HBLFunc);
@@ -188,13 +150,15 @@ int main(int argc, char *argv[])
     NE_Init3D();
     NE_ClearColorSet(RGB15(10, 20, 31), 63, 0);
 
+    // libnds uses VRAM_C for the text console, reserve A and B only
+    NE_TextureSystemReset(0, 0, NE_VRAM_AB);
+
     Scene.Camera = NE_CameraCreate();
 
     NE_CameraSet(Scene.Camera,
                  0.1, 0.2, 0.1,
                  0, 0, 0,
-                 0, 1, 0
-    );
+                 0, 1, 0);
 
     TerrainMaterial = NE_MaterialCreate();
 
@@ -207,12 +171,26 @@ int main(int argc, char *argv[])
         false,
         false);
 
+    TreeMaterial = NE_MaterialCreate();
+
+    NE_MaterialTexLoad(TreeMaterial, NE_A1RGB5, 256, 256, NE_TEXGEN_TEXCOORD,
+                       textureBitmap);
+
     {
         float lx = 1.0f, ly = -2.0f, lz = 1.0f;
         float llen = sqrtf(lx * lx + ly * ly + lz * lz);
-        lx /= llen; ly /= llen; lz /= llen;
+        lx /= llen;
+        ly /= llen;
+        lz /= llen;
         NE_LightSet(0, NE_White, lx, ly, lz);
     }
+
+    // Allocate space for everything
+    for (int i = 0; i < NUM_MODELS; i++)
+        Scene.Model[i] = NE_ModelCreate(NE_Static);
+
+    for (int i = 0; i < 4; i++)
+        createTree(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE);
 
     int fpscount = 0;
     int oldsec = 0;
@@ -285,8 +263,6 @@ int main(int argc, char *argv[])
         }
 
         printf("\x1b[0;0HPad: Rotate.\nA/B: Move forward/back.");
-        printf("\nPolys: %d\nVertices: %d\nCPU: %d%%",
-               NE_GetPolygonCount(), NE_GetVertexCount(), NE_GetCPUPercent());
         printf("\nSeed: %d, Keys: %08X", seed, keys);
         printf("\x1b[15;0HPos: %.2f %.2f %.2f", player.x, player.y, player.z);
 
