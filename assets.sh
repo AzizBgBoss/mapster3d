@@ -9,7 +9,7 @@ rm -rf data
 mkdir -p data
 
 python3 $OBJ2DL \
-    --input $ASSETS/cube.obj \
-    --output data/cube.bin \
-    --texture 256 256 \
-    --scale 0.1
+    --input $ASSETS/tree.obj \
+    --output data/tree.bin \
+    --texture 64 64 \
+    --scale 1

@@ -58,7 +58,7 @@ bool createTree(float x, float z)
     {
         if (!trees[i].active)
         {
-            if (createModel(x, getHeightAt(x, z), z, 0, 0, 0, cube_bin, TreeMaterial))
+            if (createModel(x, getHeightAt(x, z), z, 0, 0, 0, tree_bin, TreeMaterial))
             {
                 trees[i].active = true;
                 trees[i].x = x;

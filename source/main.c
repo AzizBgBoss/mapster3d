@@ -10,7 +10,7 @@ Yours truly, past AzizBgBoss
 #include <time.h>
 #include <math.h>
 
-#include "cube_bin.h"
+#include "tree_bin.h"
 #include "texture.h"
 
 #include "defs.h"
@@ -173,7 +173,7 @@ int main(int argc, char *argv[])
 
     TreeMaterial = NE_MaterialCreate();
 
-    NE_MaterialTexLoad(TreeMaterial, NE_A1RGB5, 256, 256, NE_TEXGEN_TEXCOORD,
+    NE_MaterialTexLoad(TreeMaterial, NE_A1RGB5, 64, 64, NE_TEXGEN_TEXCOORD,
                        textureBitmap);
 
     {
