@@ -11,5 +11,5 @@ mkdir -p data
 python3 $OBJ2DL \
     --input $ASSETS/tree.obj \
     --output data/tree.bin \
-    --texture 64 64 \
+    --texture 256 256 \
     --scale 1

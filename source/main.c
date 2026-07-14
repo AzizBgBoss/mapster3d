@@ -173,17 +173,8 @@ int main(int argc, char *argv[])
 
     TreeMaterial = NE_MaterialCreate();
 
-    NE_MaterialTexLoad(TreeMaterial, NE_A1RGB5, 64, 64, NE_TEXGEN_TEXCOORD,
+    NE_MaterialTexLoad(TreeMaterial, NE_A1RGB5, 256, 256, NE_TEXGEN_TEXCOORD,
                        textureBitmap);
-
-    {
-        float lx = 1.0f, ly = -2.0f, lz = 1.0f;
-        float llen = sqrtf(lx * lx + ly * ly + lz * lz);
-        lx /= llen;
-        ly /= llen;
-        lz /= llen;
-        NE_LightSet(0, NE_White, lx, ly, lz);
-    }
 
     // Allocate space for everything
     for (int i = 0; i < NUM_MODELS; i++)
