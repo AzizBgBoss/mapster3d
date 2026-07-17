@@ -11,7 +11,11 @@ Yours truly, past AzizBgBoss
 #include <math.h>
 
 #include "tree_bin.h"
-#include "texture.h"
+#include "tree_texture.h"
+#include "npc_bin.h"
+#include "npc_texture.h"
+
+#include "terrain_texture.h"
 
 #include "defs.h"
 #include "vars.h"
@@ -69,47 +73,73 @@ void Draw3DScene(void *arg)
                              terrainVertices[x + 1][z + 1][2]) *
                             0.5f;
 
-            float dx = centerX - camX;
-            float dy = centerY - camY;
-            float dz = centerZ - camZ;
-
-            float distSq = dx * dx + dy * dy + dz * dz;
-            if (distSq > RENDER * RENDER)
-                continue;
-            float dist = sqrtf(distSq);
-            float dot;
-            if (dist > 0.00001f)
-                dot = (dx * dirX + dy * dirY + dz * dirZ) / dist;
-            else
-                dot = 1.0f;
-
-            if (dot < -1.0f)
+            if (!isInSight(camX, camY, camZ, dirX, dirY, dirZ, centerX, centerY, centerZ))
                 continue;
 
             NE_PolyNormal(terrainNormal[x][z][0][0], terrainNormal[x][z][0][1], terrainNormal[x][z][0][2]);
+            float baseU = WRAP_U(x * TEX_SCALE);
+            float nextU = baseU + TEX_SCALE;
 
+            float baseV = WRAP_V(z * TEX_SCALE);
+            float nextV = baseV + TEX_SCALE;
+
+            NE_PolyNormal(terrainNormal[x][z][0][0], terrainNormal[x][z][0][1], terrainNormal[x][z][0][2]);
+
+            NE_PolyTexCoord(baseU, baseV);
             NE_PolyVertex(terrainVertices[x][z][0], terrainVertices[x][z][1], terrainVertices[x][z][2]);
+
+            NE_PolyTexCoord(nextU, baseV);
             NE_PolyVertex(terrainVertices[x + 1][z][0], terrainVertices[x + 1][z][1], terrainVertices[x + 1][z][2]);
+
+            NE_PolyTexCoord(baseU, nextV);
             NE_PolyVertex(terrainVertices[x][z + 1][0], terrainVertices[x][z + 1][1], terrainVertices[x][z + 1][2]);
 
             NE_PolyNormal(terrainNormal[x][z][1][0], terrainNormal[x][z][1][1], terrainNormal[x][z][1][2]);
 
+            NE_PolyTexCoord(baseU, nextV);
             NE_PolyVertex(terrainVertices[x][z + 1][0], terrainVertices[x][z + 1][1], terrainVertices[x][z + 1][2]);
+
+            NE_PolyTexCoord(nextU, baseV);
             NE_PolyVertex(terrainVertices[x + 1][z][0], terrainVertices[x + 1][z][1], terrainVertices[x + 1][z][2]);
+
+            NE_PolyTexCoord(nextU, nextV);
             NE_PolyVertex(terrainVertices[x + 1][z + 1][0], terrainVertices[x + 1][z + 1][1], terrainVertices[x + 1][z + 1][2]);
         }
     }
 
     NE_PolyEnd();
 
-    for (int i = 0; i < NUM_MODELS; i++)
-        if (Scene->activeModel[i] && Scene->Model[i]->x / 4096.0f > camX - RENDER && Scene->Model[i]->x / 4096.0f < camX + RENDER &&
-            Scene->Model[i]->y / 4096.0f > camY - RENDER && Scene->Model[i]->y / 4096.0f < camY + RENDER &&
-            Scene->Model[i]->z / 4096.0f > camZ - RENDER && Scene->Model[i]->z / 4096.0f < camZ + RENDER)
-            NE_ModelDraw(Scene->Model[i]);
+    VisibleModel visible[NUM_MODELS];
+    int visibleCount = 0;
 
-    printf("\nPolys: %d        \nVertices: %d         \nCPU: %d%%       ",
-           NE_GetPolygonCount(), NE_GetVertexCount(), NE_GetCPUPercent());
+    for (int i = 0; i < NUM_MODELS; i++)
+    {
+        if (!Scene->activeModel[i])
+            continue;
+
+        float mx = Scene->Model[i]->x / 4096.0f;
+        float my = Scene->Model[i]->y / 4096.0f;
+        float mz = Scene->Model[i]->z / 4096.0f;
+
+        if (!isInSight(camX, camY, camZ, dirX, dirY, dirZ, mx, my, mz))
+            continue;
+
+        float dx = mx - camX;
+        float dy = my - camY;
+        float dz = mz - camZ;
+
+        visible[visibleCount].model = Scene->Model[i];
+        visible[visibleCount].distSq = dx * dx + dy * dy + dz * dz;
+        visibleCount++;
+    }
+
+    qsort(visible, visibleCount, sizeof(VisibleModel), compareModelDist);
+
+    for (int i = 0; i < visibleCount; i++)
+        NE_ModelDraw(visible[i].model);
+
+    printf("\nPolys: %d %d%%       \nVertices: %d %d%%       \nCPU: %d%%       ",
+           NE_GetPolygonCount(), NE_GetPolygonCount() / 2048 * 100, NE_GetVertexCount(), NE_GetVertexCount() / 2048 * 100, NE_GetCPUPercent());
 }
 
 int main(int argc, char *argv[])
@@ -154,7 +184,7 @@ int main(int argc, char *argv[])
     NE_SetFov(60);
     NE_ClippingPlanesSet(0.05, 40);
     NE_ClearColorSet(RGB15(10, 20, 31), 63, 0);
-    NE_FogEnable(5, RGB15(10, 20, 31), 31, 2, 0x7C00); // shift, color, density, mass, depth
+    NE_FogEnable(5, RGB15(10, 20, 31), 31, 5, 0x7C00); // shift, color, density, mass, depth
 
     // libnds uses VRAM_C for the text console, reserve A and B only
     NE_TextureSystemReset(0, 0, NE_VRAM_AB);
@@ -167,47 +197,64 @@ int main(int argc, char *argv[])
                  0, 1, 0);
 
     TerrainMaterial = NE_MaterialCreate();
+    TerrainPalette = NE_PaletteCreate();
 
-    NE_MaterialSetProperties(
-        TerrainMaterial,
-        RGB15(0, 31, 0),
-        RGB15(0, 10, 0),
-        RGB15(0, 0, 0),
-        RGB15(0, 0, 0),
-        false,
-        false);
+    NE_MaterialTexLoad(TerrainMaterial, NE_PAL256, 256, 256, NE_TEXGEN_TEXCOORD,
+                       terrain_textureBitmap);
+    NE_PaletteLoad(TerrainPalette, terrain_texturePal, 256, NE_PAL256);
+    NE_MaterialSetPalette(TerrainMaterial, TerrainPalette);
 
     TreeMaterial = NE_MaterialCreate();
+    TreePalette = NE_PaletteCreate();
 
-    NE_MaterialTexLoad(TreeMaterial, NE_A1RGB5, 256, 256, NE_TEXGEN_TEXCOORD,
-                       textureBitmap);
+    NE_MaterialTexLoad(TreeMaterial, NE_PAL256, 256, 256, NE_TEXGEN_TEXCOORD,
+                       tree_textureBitmap);
+    NE_PaletteLoad(TreePalette, tree_texturePal, 256, NE_PAL256);
+    NE_MaterialSetPalette(TreeMaterial, TreePalette);
+
+    NpcMaterial = NE_MaterialCreate();
+    NpcPalette = NE_PaletteCreate();
+
+    NE_MaterialTexLoad(NpcMaterial, NE_PAL256, 256, 256, NE_TEXGEN_TEXCOORD,
+                       npc_textureBitmap);
+    NE_PaletteLoad(NpcPalette, npc_texturePal, 256, NE_PAL256);
+    NE_MaterialSetPalette(NpcMaterial, NpcPalette);
 
     // Allocate space for everything
     for (int i = 0; i < NUM_MODELS; i++)
         Scene.Model[i] = NE_ModelCreate(NE_Static);
 
-    for (int i = 0; i < 4; i++)
+    for (int i = 0; i < MAX_TREES; i++)
         createTree(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE);
+    for (int i = 0; i < MAX_NPCS; i++)
+        spawnNpc(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE);
 
     int fpscount = 0;
     int oldsec = 0;
     int seconds = 0;
 
+    timerStart(0, ClockDivider_1024, 0, NULL); // more precise than time()
+    oldTime = timerElapsed(0) / (float)(BUS_CLOCK / 1024);
+
     while (1)
     {
+        delta = (timerElapsed(0) / (float)(BUS_CLOCK / 1024) - oldTime) / FPS_TIME;
+        oldTime = timerElapsed(0) / (float)(BUS_CLOCK / 1024); 
         NE_WaitForVBL(0);
+
+        // ========================= Controls ========================================
 
         scanKeys();
         uint32_t keys = keysHeld();
 
         if (keys & KEY_LEFT)
-            player.yaw += 0.05f;
+            player.yaw += 0.05f * delta;
         else if (keys & KEY_RIGHT)
-            player.yaw -= 0.05f;
+            player.yaw -= 0.05f * delta;
         if (keys & KEY_UP)
-            player.pitch += 0.05f;
+            player.pitch += 0.05f * delta;
         else if (keys & KEY_DOWN)
-            player.pitch -= 0.05f;
+            player.pitch -= 0.05f * delta;
 
         if (player.pitch > 1.5f)
             player.pitch = 1.5f;
@@ -216,24 +263,14 @@ int main(int argc, char *argv[])
 
         if (keys & KEY_A)
         {
-            player.x += sinf(player.yaw) * player.speed;
-            player.z += cosf(player.yaw) * player.speed;
+            moveForward(&player.x, &player.z, player.yaw, player.speed);
         }
         if (keys & KEY_B)
         {
-            player.x -= sinf(player.yaw) * player.speed;
-            player.z -= cosf(player.yaw) * player.speed;
+            moveForward(&player.x, &player.z, player.yaw, -player.speed);
         }
 
-        if (player.x > (TERRAIN_SIZE / 2.0f) * SCALE)
-            player.x = (TERRAIN_SIZE / 2.0f) * SCALE;
-        else if (player.x < -(TERRAIN_SIZE / 2.0f) * SCALE)
-            player.x = -(TERRAIN_SIZE / 2.0f) * SCALE;
-
-        if (player.z > (TERRAIN_SIZE / 2.0f) * SCALE)
-            player.z = (TERRAIN_SIZE / 2.0f) * SCALE;
-        else if (player.z < -(TERRAIN_SIZE / 2.0f) * SCALE)
-            player.z = -(TERRAIN_SIZE / 2.0f) * SCALE;
+        // ========================= Update Player ===================================
 
         player.y = getHeightAt(player.x, player.z);
 
@@ -248,6 +285,18 @@ int main(int argc, char *argv[])
 
                      0, 1, 0);
 
+        // ========================= Update NPCs =====================================
+
+        for (int i = 0; i < MAX_NPCS; i++)
+        {
+            if (npcs[i].active)
+            {
+                updateNpc(&npcs[i]);
+            }
+        }
+
+        // ========================= Update Bottom Screen UI =========================
+
         time_t unixTime = time(NULL);
         struct tm *timeStruct = gmtime((const time_t *)&unixTime);
         seconds = timeStruct->tm_sec;
@@ -261,10 +310,11 @@ int main(int argc, char *argv[])
 
         printf("\x1b[0;0HPad: Rotate.\nA/B: Move forward/back.");
         printf("\nSeed: %d, Keys: %08X", seed, keys);
-        printf("\x1b[15;0HPos: %.2f %.2f %.2f   ", player.x, player.y, player.z);
+        printf("\x1b[15;0HPos: %.2f %.2f %.2f   \nP, Y: %.2f %.2f   ", player.x, player.y, player.z, player.pitch, player.yaw);
 
         NE_ProcessArg(Draw3DScene, &Scene);
         fpscount++;
+        frames++;
     }
 
     return 0;

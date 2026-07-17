@@ -10,10 +10,23 @@ Player player = {0, 0, 0, 0, 0, 0.02f};
 typedef struct
 {
     bool active;
+    int modelID;
     float x, y, z;
 } Tree;
 
-Tree trees[MAX_TREES];
+Tree trees[MAX_TREES] = {0};
+
+typedef struct
+{
+    bool active;
+    int modelID;
+    float x, y, z;
+    float yaw;
+    float speed;
+    uint8_t target; 
+} Npc;
+
+Npc npcs[MAX_NPCS] = {0};
 
 typedef struct
 {
@@ -24,8 +37,18 @@ typedef struct
 
 SceneData Scene = {0};
 
-NE_Material *TerrainMaterial;
-NE_Material *TreeMaterial;
+typedef struct {
+    NE_Model *model;
+    float distSq;
+} VisibleModel;
+
+uint32_t frames = 0;
+
+NE_Material *TerrainMaterial, *TreeMaterial, *NpcMaterial;
+NE_Palette *TerrainPalette, *TreePalette, *NpcPalette;
+
+uint32_t oldTime;
+float delta;
 
 float terrainVertices[TERRAIN_SIZE][TERRAIN_SIZE][3] = {0};
 float terrainNormal[TERRAIN_SIZE - 1][TERRAIN_SIZE - 1][2][3] = {0};
