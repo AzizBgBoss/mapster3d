@@ -96,7 +96,6 @@ bool isSolid(float x, float z, int param) // if param == -1, we're checking the 
             return true;
     }
     */
-
     if (x > (TERRAIN_SIZE / 2.0f - 1.0f) * SCALE || x < -(TERRAIN_SIZE / 2.0f) * SCALE)
         return true;
     if (z > (TERRAIN_SIZE / 2.0f - 1.0f) * SCALE || z < -(TERRAIN_SIZE / 2.0f) * SCALE)
@@ -122,7 +121,7 @@ void moveForward(float *x, float *z, float yaw, float speed, int param)
     {
         z[0] = fz;
     }
-    
+
     // add this just in case i spawn something out of bounds
 
     if (x[0] > (TERRAIN_SIZE / 2.0f - 1.0f) * SCALE)
@@ -186,6 +185,7 @@ bool createItem(float x, float z, uint8_t itemID, uint8_t quantity)
             if (id != -1)
             {
                 items[i].active = true;
+                items[i].modelID = id;
                 items[i].x = x;
                 items[i].y = getHeightAt(x, z);
                 items[i].z = z;
@@ -197,6 +197,21 @@ bool createItem(float x, float z, uint8_t itemID, uint8_t quantity)
         }
     }
     return false;
+}
+
+void destroyItem(int id)
+{
+    items[id].active = false;
+    Scene.activeModel[items[id].modelID] = false;
+    return;
+}
+
+void addItemQuantity(uint8_t id, uint8_t quantity)
+{
+    items[id].inventory.quantity += quantity;
+    if (items[id].inventory.quantity <= 0)
+        destroyItem(id);
+    return;
 }
 
 bool spawnNpc(float x, float z)
@@ -213,6 +228,10 @@ bool spawnNpc(float x, float z)
                 npcs[i].x = x;
                 npcs[i].y = getHeightAt(x, z);
                 npcs[i].z = z;
+                npcs[i].target = TARGET_RANDOM;
+                npcs[i].inventory.itemID = ITEM_NONE;
+                npcs[i].inventory.quantity = 0;
+                npcs[i].inventory.modelID = -1;
                 return true;
             }
             return false;
@@ -245,4 +264,67 @@ void updateNpc(Npc *npc, uint8_t id)
 
     NE_ModelSetCoord(Scene.Model[npc->modelID], npc->x, npc->y, npc->z);
     NE_ModelSetRot(Scene.Model[npc->modelID], 0, RAD2ANG(npc->yaw), 0);
+}
+
+int giveInventory(Inventory *inventory, uint8_t itemID, uint8_t quantity)
+{
+    int space = 0;
+    if (inventory->itemID == ITEM_NONE)
+    {
+        inventory->itemID = itemID;
+        if (quantity > 3)
+        {
+            inventory->quantity = 3;
+            space = 3;
+        }
+        else
+        {
+            inventory->quantity = quantity;
+            space = quantity;
+        }
+        inventory->modelID = createModel(0, 0, 0, 0, 0, 0, itemModels[itemID].model, itemModels[itemID].mat); // it is mathematically impossible for this to return -1
+    }
+    else if (inventory->itemID == itemID)
+    {
+        if (inventory->quantity > 3)
+        {
+            space = 0;
+        }
+        else
+        {
+            inventory->quantity = 3;
+            space = 3 - inventory->quantity;
+        }
+    }
+    else if (inventory->itemID != itemID)
+    {
+        space = 0;
+    }
+
+    if (inventory->quantity <= 0 && inventory->itemID != ITEM_NONE)
+    {
+        inventory->itemID = ITEM_NONE;
+        inventory->quantity = 0;
+        inventory->modelID = -1;
+        Scene.activeModel[inventory->modelID] = false;
+    }
+
+    return space;
+}
+
+void syncHeldItem(float x, float y, float z, float yaw, float pitch, int modelID)
+{
+    if (modelID == -1)
+        return;
+
+    const float dist = 0.1f; // how far we hold the item in front of us
+
+    float newX = x + sinf(yaw) * cosf(pitch) * dist;
+    float newZ = z + cosf(yaw) * cosf(pitch) * dist; // multiply pitch so we feel the pitch :)
+    float newY = y + 0.04f + sinf(pitch * 0.8f) * dist;
+
+    newY = max(newY, getHeightAt(newX, newZ));
+
+    NE_ModelSetCoord(Scene.Model[modelID], newX, newY, newZ);
+    NE_ModelSetRot(Scene.Model[modelID], 0, RAD2ANG(yaw), 0);
 }

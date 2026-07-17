@@ -234,20 +234,25 @@ int main(int argc, char *argv[])
 
     // Allocate space for everything
     for (int i = 0; i < NUM_MODELS; i++)
+    {
         Scene.Model[i] = NE_ModelCreate(NE_Static);
+        Scene.activeModel[i] = false;
+    }
 
     for (int i = 0; i < MAX_TREES; i++)
         createTree(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE);
     for (int i = 0; i < MAX_ITEMS; i++)
         createItem(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(1, ITEMS), 1);
     spawnNpc(2, 2);
-
+    /*
     int fpscount = 0;
     int oldsec = 0;
     int seconds = 0;
-
+    */
     timerStart(0, ClockDivider_1024, 0, NULL); // more precise than time()
     oldTime = timerElapsed(0) / (float)(BUS_CLOCK / 1024);
+
+    giveInventory(&player.inventory, ITEM_APPLE, 1);
 
     while (1)
     {
@@ -298,6 +303,8 @@ int main(int argc, char *argv[])
 
                      0, 1, 0);
 
+        syncHeldItem(player.x, player.y, player.z, player.yaw, player.pitch, player.inventory.modelID);
+
         // ========================= Update NPCs =====================================
 
         for (int i = 0; i < MAX_NPCS; i++)
@@ -305,22 +312,22 @@ int main(int argc, char *argv[])
             if (npcs[i].active)
             {
                 updateNpc(&npcs[i], i);
+                syncHeldItem(npcs[i].x, npcs[i].y, npcs[i].z, npcs[i].yaw, 0, npcs[i].inventory.modelID);
             }
         }
 
         // ========================= Update Bottom Screen UI =========================
 
         clearPrint();
-        printSmart(0, 0, "Holding: ");
-        printSmartDirect(itemNames[player.inventory.itemID]);
-        if (player.inventory.quantity > 0)
+        printSmart(0, 0, itemNames[player.inventory.itemID]);
+        if (player.inventory.quantity > 0 && player.inventory.itemID != ITEM_NONE)
         {
             printSmartDirect(" x ");
             printValDirect(player.inventory.quantity);
         }
 
         NE_ProcessArg(Draw3DScene, &Scene);
-        fpscount++;
+        // fpscount++;
         frames++;
     }
 

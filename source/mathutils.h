@@ -1,6 +1,6 @@
 // Math utilities for Perlin noise and other functions
 
-static int clamp(int val, int min, int max)
+static float clamp(float val, float min, float max)
 {
 	if (val < min)
 		return min;
@@ -9,14 +9,14 @@ static int clamp(int val, int min, int max)
 	return val;
 }
 
-static int min(int val, int min)
+static float min(float val, float min)
 {
 	if (val < min)
 		return val;
 	return min;
 }
 
-static int max(int val, int max)
+static float max(float val, float max)
 {
 	if (val > max)
 		return val;
@@ -26,6 +26,11 @@ static int max(int val, int max)
 int rando(int min, int max) // Random function, returns a random integer between min and max (max excluded)
 {
 	return rand() % (max - min) + min;
+}
+
+float frando(float min, float max) // Random function, returns a random float between min and max (max excluded)
+{
+	return (float)rand() / (float)RAND_MAX * (max - min) + min;
 }
 
 // Hash function

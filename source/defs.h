@@ -2,7 +2,7 @@
 #define MAX_NPCS 16
 #define MAX_ITEMS 32
 
-#define NUM_MODELS (MAX_TREES + MAX_NPCS + MAX_ITEMS)
+#define NUM_MODELS (MAX_TREES + MAX_NPCS * 2 + MAX_ITEMS + 1) // * 2 since each NPC can hold and item; + 1 for the item we're holding
 
 #define SCREEN_WIDTH 256
 #define SCREEN_HEIGHT 192

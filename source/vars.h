@@ -9,11 +9,13 @@ typedef struct
 {
     uint8_t itemID;
     uint8_t quantity;
+    int modelID;
 } Inventory;
 
 typedef struct
 {
     bool active;
+    int modelID;
     float x, y, z;
     Inventory inventory;
 } Item;
@@ -28,7 +30,7 @@ typedef struct
     Inventory inventory;
 } Player;
 
-Player player = {0, 0, 0, 0, 0, 0.02f, {ITEM_APPLE, 3}};
+Player player = {0, 0, 0, 0, 0, 0.02f, {ITEM_NONE, 0}};
 
 typedef struct
 {
