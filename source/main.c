@@ -226,6 +226,7 @@ int main(int argc, char *argv[])
         createTree(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE);
     for (int i = 0; i < MAX_ITEMS; i++)
         createItem(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(0, ITEMS), 1);
+    spawnNpc(6, 7);
 
     int fpscount = 0;
     int oldsec = 0;
