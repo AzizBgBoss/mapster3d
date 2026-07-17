@@ -226,7 +226,7 @@ int main(int argc, char *argv[])
         createTree(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE);
     for (int i = 0; i < MAX_ITEMS; i++)
         createItem(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(0, ITEMS), 1);
-    spawnNpc(6, 7);
+    spawnNpc(2, 2);
 
     int fpscount = 0;
     int oldsec = 0;
@@ -262,11 +262,11 @@ int main(int argc, char *argv[])
 
         if (keys & KEY_A)
         {
-            moveForward(&player.x, &player.z, player.yaw, player.speed);
+            moveForward(&player.x, &player.z, player.yaw, player.speed, -1);
         }
         if (keys & KEY_B)
         {
-            moveForward(&player.x, &player.z, player.yaw, -player.speed);
+            moveForward(&player.x, &player.z, player.yaw, -player.speed, -1);
         }
 
         // ========================= Update Player ===================================
@@ -290,7 +290,7 @@ int main(int argc, char *argv[])
         {
             if (npcs[i].active)
             {
-                updateNpc(&npcs[i]);
+                updateNpc(&npcs[i], i);
             }
         }
 

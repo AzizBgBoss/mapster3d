@@ -67,10 +67,61 @@ bool isInSight(float camX, float camY, float camZ,
     return true;
 }
 
-void moveForward(float *x, float *z, float yaw, float speed)
+bool isInRange(float x1, float z1, float x2, float z2, float range)
 {
-    x[0] += sinf(yaw) * speed * delta;
-    z[0] += cosf(yaw) * speed * delta;
+    float dx = x1 - x2;
+    float dz = z1 - z2;
+    return (dx * dx + dz * dz) <= (range * range);
+}
+
+bool isInPlayerRange(float x, float z, float range)
+{
+    return isInRange(x, z, player.x, player.z, range);
+}
+
+bool isSolid(float x, float z, int param) // if param == -1, we're checking the player, else it's an npc id. we do this so the collision doesn't count the owner's own box.
+{
+    const float dist = 0.15f;
+    if (isInPlayerRange(x, z, dist) && param != -1)
+        return true;
+    for (int i = 0; i < MAX_TREES; i++)
+    {
+        if (trees[i].active && isInRange(x, z, trees[i].x, trees[i].z, dist))
+            return true;
+    }
+    for (int i = 0; i < MAX_NPCS; i++)
+    {
+        if (npcs[i].active && isInRange(x, z, npcs[i].x, npcs[i].z, dist) && i != param)
+            return true;
+    }
+
+    if (x > (TERRAIN_SIZE / 2.0f - 1.0f) * SCALE || x < -(TERRAIN_SIZE / 2.0f) * SCALE)
+        return true;
+    if (z > (TERRAIN_SIZE / 2.0f - 1.0f) * SCALE || z < -(TERRAIN_SIZE / 2.0f) * SCALE)
+        return true;
+    return false;
+}
+
+void moveForward(float *x, float *z, float yaw, float speed, int param)
+{
+    float fx = x[0] + sinf(yaw) * speed * delta;
+    float fz = z[0] + cosf(yaw) * speed * delta;
+
+    if (!isSolid(fx, fz, param))
+    {
+        x[0] = fx;
+        z[0] = fz;
+    }
+    else if (!isSolid(fx, z[0], param))
+    {
+        x[0] = fx;
+    }
+    else if (!isSolid(x[0], fz, param))
+    {
+        z[0] = fz;
+    }
+    
+    // add this just in case i spawn something out of bounds
 
     if (x[0] > (TERRAIN_SIZE / 2.0f - 1.0f) * SCALE)
         x[0] = (TERRAIN_SIZE / 2.0f - 1.0f) * SCALE;
@@ -168,7 +219,7 @@ bool spawnNpc(float x, float z)
     return false;
 }
 
-void updateNpc(Npc *npc)
+void updateNpc(Npc *npc, uint8_t id)
 {
     if (npc->target == TARGET_PLAYER)
     {
@@ -184,7 +235,7 @@ void updateNpc(Npc *npc)
         npc->speed = 0.01f;
     }
 
-    moveForward(&npc->x, &npc->z, npc->yaw, npc->speed);
+    moveForward(&npc->x, &npc->z, npc->yaw, npc->speed, id);
 
     npc->y = getHeightAt(npc->x, npc->z);
 
