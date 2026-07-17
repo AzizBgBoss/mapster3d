@@ -12,10 +12,10 @@ ARM_NONE_EABI_PATH	?= $(WONDERFUL_TOOLCHAIN)/toolchain/gcc-arm-none-eabi/bin/
 # ===========
 
 NAME		:= $(shell basename $(CURDIR))
-GAME_TITLE	:= $(shell basename $(CURDIR)).nds
-GAME_SUBTITLE	:= Nitro Engine example
-GAME_AUTHOR	:= blocksds.skylyrac.net
-GAME_ICON	:= $(BLOCKSDS)/sys/icon.bmp
+GAME_TITLE	:= Mapster3D
+GAME_SUBTITLE	:= By AzizBgBoss
+GAME_AUTHOR	:= github.com/AzizBgBoss/mapster3d
+GAME_ICON	:= media/icon.png
 
 # DLDI and internal SD slot of DSi
 # --------------------------------

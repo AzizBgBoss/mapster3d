@@ -94,7 +94,7 @@ int createModel(float x, float y, float z, float pitch, float yaw, float roll, c
             NE_ModelSetMaterial(Scene.Model[i], mat);
             NE_ModelSetCoord(Scene.Model[i], x, y, z);
             NE_ModelSetRot(Scene.Model[i], pitch, yaw, roll);
-            NE_ModelScale(Scene.Model[i], SCALE, SCALE, SCALE);
+            NE_ModelScale(Scene.Model[i], MODEL_SCALE, MODEL_SCALE, MODEL_SCALE);
             return i;
         }
     }
@@ -115,6 +115,29 @@ bool createTree(float x, float z)
                 trees[i].x = x;
                 trees[i].y = getHeightAt(x, z);
                 trees[i].z = z;
+                return true;
+            }
+            return false;
+        }
+    }
+    return false;
+}
+
+bool createItem(float x, float z, uint8_t itemID, uint8_t quantity)
+{
+    for (int i = 0; i < MAX_ITEMS; i++)
+    {
+        if (!items[i].active)
+        {
+            int id = createModel(x, getHeightAt(x, z), z, 0, rando(0, 512), 0, itemModels[itemID].model, itemModels[itemID].mat);
+            if (id != -1)
+            {
+                items[i].active = true;
+                items[i].x = x;
+                items[i].y = getHeightAt(x, z);
+                items[i].z = z;
+                items[i].inventory.itemID = itemID;
+                items[i].inventory.quantity = quantity;
                 return true;
             }
             return false;

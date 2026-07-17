@@ -14,6 +14,10 @@ Yours truly, past AzizBgBoss
 #include "tree_texture.h"
 #include "npc_bin.h"
 #include "npc_texture.h"
+#include "apple_bin.h"
+#include "apple_texture.h"
+#include "orange_bin.h"
+#include "orange_texture.h"
 
 #include "terrain_texture.h"
 
@@ -196,29 +200,23 @@ int main(int argc, char *argv[])
                  0, 0, 0,
                  0, 1, 0);
 
-    TerrainMaterial = NE_MaterialCreate();
-    TerrainPalette = NE_PaletteCreate();
+    for (int i = 0; i < SIZE_MATERIALS_REF; i++)
+    {
+        materials[i].mat = NE_MaterialCreate();
+        materials[i].pal = NE_PaletteCreate();
 
-    NE_MaterialTexLoad(TerrainMaterial, NE_PAL256, 256, 256, NE_TEXGEN_TEXCOORD,
-                       terrain_textureBitmap);
-    NE_PaletteLoad(TerrainPalette, terrain_texturePal, 256, NE_PAL256);
-    NE_MaterialSetPalette(TerrainMaterial, TerrainPalette);
+        NE_MaterialTexLoad(materials[i].mat, NE_PAL256, TEX_WIDTH, TEX_HEIGHT, NE_TEXGEN_TEXCOORD,
+                           materialsRef[i].Bitmap);
+        NE_PaletteLoad(materials[i].pal, materialsRef[i].Pal, TEX_WIDTH, NE_PAL256);
+        NE_MaterialSetPalette(materials[i].mat, materials[i].pal);
+    }
 
-    TreeMaterial = NE_MaterialCreate();
-    TreePalette = NE_PaletteCreate();
+    TerrainMaterial = materials[0].mat;
+    TreeMaterial = materials[1].mat;
+    NpcMaterial = materials[2].mat;
 
-    NE_MaterialTexLoad(TreeMaterial, NE_PAL256, 256, 256, NE_TEXGEN_TEXCOORD,
-                       tree_textureBitmap);
-    NE_PaletteLoad(TreePalette, tree_texturePal, 256, NE_PAL256);
-    NE_MaterialSetPalette(TreeMaterial, TreePalette);
-
-    NpcMaterial = NE_MaterialCreate();
-    NpcPalette = NE_PaletteCreate();
-
-    NE_MaterialTexLoad(NpcMaterial, NE_PAL256, 256, 256, NE_TEXGEN_TEXCOORD,
-                       npc_textureBitmap);
-    NE_PaletteLoad(NpcPalette, npc_texturePal, 256, NE_PAL256);
-    NE_MaterialSetPalette(NpcMaterial, NpcPalette);
+    itemModels[0] = (ModelRef) {apple_bin, materials[3].mat};
+    itemModels[1] = (ModelRef) {orange_bin, materials[4].mat};
 
     // Allocate space for everything
     for (int i = 0; i < NUM_MODELS; i++)
@@ -226,8 +224,8 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < MAX_TREES; i++)
         createTree(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE);
-    for (int i = 0; i < MAX_NPCS; i++)
-        spawnNpc(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE);
+    for (int i = 0; i < MAX_ITEMS; i++)
+        createItem(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(0, ITEMS), 1);
 
     int fpscount = 0;
     int oldsec = 0;
@@ -239,7 +237,7 @@ int main(int argc, char *argv[])
     while (1)
     {
         delta = (timerElapsed(0) / (float)(BUS_CLOCK / 1024) - oldTime) / FPS_TIME;
-        oldTime = timerElapsed(0) / (float)(BUS_CLOCK / 1024); 
+        oldTime = timerElapsed(0) / (float)(BUS_CLOCK / 1024);
         NE_WaitForVBL(0);
 
         // ========================= Controls ========================================

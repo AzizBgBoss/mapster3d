@@ -1,11 +1,27 @@
 typedef struct
 {
+    uint8_t itemID;
+    uint8_t quantity;
+} Inventory;
+
+typedef struct
+{
+    bool active;
+    float x, y, z;
+    Inventory inventory;
+} Item;
+
+Item items[MAX_ITEMS] = {0};
+
+typedef struct
+{
     float x, y, z;
     float pitch, yaw;
     float speed;
+    Inventory inventory;
 } Player;
 
-Player player = {0, 0, 0, 0, 0, 0.02f};
+Player player = {0, 0, 0, 0, 0, 0.02f, {0}};
 
 typedef struct
 {
@@ -23,7 +39,8 @@ typedef struct
     float x, y, z;
     float yaw;
     float speed;
-    uint8_t target; 
+    uint8_t target;
+    Inventory inventory;
 } Npc;
 
 Npc npcs[MAX_NPCS] = {0};
@@ -37,15 +54,48 @@ typedef struct
 
 SceneData Scene = {0};
 
-typedef struct {
+typedef struct
+{
     NE_Model *model;
     float distSq;
 } VisibleModel;
 
+typedef struct
+{
+    uint8_t *model;
+    NE_Material *mat;
+} ModelRef;
+
+typedef struct
+{
+    unsigned int *Bitmap;
+    unsigned short *Pal;
+} MaterialRef;
+
+typedef struct
+{
+    NE_Material *mat;
+    NE_Palette *pal;
+} Material;
+
 uint32_t frames = 0;
 
-NE_Material *TerrainMaterial, *TreeMaterial, *NpcMaterial;
-NE_Palette *TerrainPalette, *TreePalette, *NpcPalette;
+NE_Material *TerrainMaterial, *TreeMaterial, *NpcMaterial, *AppleMaterial, *OrangeMaterial;
+NE_Palette *TerrainPalette, *TreePalette, *NpcPalette, *ApplePalette, *OrangePalette;
+
+const MaterialRef materialsRef[] = {
+    {terrain_textureBitmap, terrain_texturePal},
+    {tree_textureBitmap, tree_texturePal},
+    {npc_textureBitmap, npc_texturePal},
+    {apple_textureBitmap, apple_texturePal},
+    {orange_textureBitmap, orange_texturePal},
+};
+
+#define SIZE_MATERIALS_REF (sizeof(materialsRef) / sizeof(MaterialRef))
+
+Material materials[SIZE_MATERIALS_REF] = {0};
+
+ModelRef itemModels[ITEMS];
 
 uint32_t oldTime;
 float delta;

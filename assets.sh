@@ -14,6 +14,6 @@ for obj in "$ASSETS"/*.obj; do
     python3 $OBJ2DL \
         --input "$obj" \
         --output "data/$name.bin" \
-        --texture 256 256 \
+        --texture 128 128 \
         --scale 1
 done
