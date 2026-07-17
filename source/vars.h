@@ -1,3 +1,10 @@
+const char *itemNames[ITEMS] =
+{
+    "Nothing",
+    "Apple",
+    "Orange",
+};
+
 typedef struct
 {
     uint8_t itemID;
@@ -21,7 +28,7 @@ typedef struct
     Inventory inventory;
 } Player;
 
-Player player = {0, 0, 0, 0, 0, 0.02f, {0}};
+Player player = {0, 0, 0, 0, 0, 0.02f, {ITEM_APPLE, 3}};
 
 typedef struct
 {
@@ -96,6 +103,8 @@ const MaterialRef materialsRef[] = {
 Material materials[SIZE_MATERIALS_REF] = {0};
 
 ModelRef itemModels[ITEMS];
+
+int bgsub;
 
 uint32_t oldTime;
 float delta;

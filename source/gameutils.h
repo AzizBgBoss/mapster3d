@@ -89,11 +89,13 @@ bool isSolid(float x, float z, int param) // if param == -1, we're checking the 
         if (trees[i].active && isInRange(x, z, trees[i].x, trees[i].z, dist))
             return true;
     }
+    /*
     for (int i = 0; i < MAX_NPCS; i++)
     {
         if (npcs[i].active && isInRange(x, z, npcs[i].x, npcs[i].z, dist) && i != param)
             return true;
     }
+    */
 
     if (x > (TERRAIN_SIZE / 2.0f - 1.0f) * SCALE || x < -(TERRAIN_SIZE / 2.0f) * SCALE)
         return true;

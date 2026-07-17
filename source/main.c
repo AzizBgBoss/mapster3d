@@ -9,6 +9,7 @@ Yours truly, past AzizBgBoss
 #include <NEMain.h>
 #include <time.h>
 #include <math.h>
+#include <stdio.h>
 
 #include "tree_bin.h"
 #include "tree_texture.h"
@@ -21,10 +22,13 @@ Yours truly, past AzizBgBoss
 
 #include "terrain_texture.h"
 
+#include "font.h"
+
 #include "defs.h"
 #include "vars.h"
 #include "mathutils.h"
 #include "gameutils.h"
+#include "bgutils.h"
 
 void Draw3DScene(void *arg)
 {
@@ -149,7 +153,17 @@ void Draw3DScene(void *arg)
 int main(int argc, char *argv[])
 {
     srand(time(NULL));
-    consoleDemoInit();
+
+    videoSetModeSub(MODE_0_2D);
+
+    vramSetPrimaryBanks(VRAM_A_MAIN_BG, VRAM_B_LCD,
+                        VRAM_C_SUB_BG, VRAM_D_LCD);
+
+    bgsub = bgInitSub(0, BgType_Text8bpp, BgSize_T_256x256, 0, 1);
+
+    dmaCopy(fontTiles, bgGetGfxPtr(bgsub), fontTilesLen);
+    dmaFillHalfWords(0, bgGetMapPtr(bgsub), 32 * 32);
+    dmaCopy(fontPal, BG_PALETTE_SUB, fontPalLen);
 
     int seed = rando(0, 10000);
     for (int x = 0; x < TERRAIN_SIZE; x++)
@@ -215,8 +229,8 @@ int main(int argc, char *argv[])
     TreeMaterial = materials[1].mat;
     NpcMaterial = materials[2].mat;
 
-    itemModels[0] = (ModelRef) {apple_bin, materials[3].mat};
-    itemModels[1] = (ModelRef) {orange_bin, materials[4].mat};
+    itemModels[1] = (ModelRef){apple_bin, materials[3].mat};
+    itemModels[2] = (ModelRef){orange_bin, materials[4].mat};
 
     // Allocate space for everything
     for (int i = 0; i < NUM_MODELS; i++)
@@ -225,7 +239,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < MAX_TREES; i++)
         createTree(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE);
     for (int i = 0; i < MAX_ITEMS; i++)
-        createItem(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(0, ITEMS), 1);
+        createItem(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(1, ITEMS), 1);
     spawnNpc(2, 2);
 
     int fpscount = 0;
@@ -296,20 +310,14 @@ int main(int argc, char *argv[])
 
         // ========================= Update Bottom Screen UI =========================
 
-        time_t unixTime = time(NULL);
-        struct tm *timeStruct = gmtime((const time_t *)&unixTime);
-        seconds = timeStruct->tm_sec;
-
-        if (seconds != oldsec)
+        clearPrint();
+        printSmart(0, 0, "Holding: ");
+        printSmartDirect(itemNames[player.inventory.itemID]);
+        if (player.inventory.quantity > 0)
         {
-            oldsec = seconds;
-            printf("\x1b[10;0HFPS: %d", fpscount);
-            fpscount = 0;
+            printSmartDirect(" x ");
+            printValDirect(player.inventory.quantity);
         }
-
-        printf("\x1b[0;0HPad: Rotate.\nA/B: Move forward/back.");
-        printf("\nSeed: %d, Keys: %08X", seed, keys);
-        printf("\x1b[15;0HPos: %.2f %.2f %.2f   \nP, Y: %.2f %.2f   ", player.x, player.y, player.z, player.pitch, player.yaw);
 
         NE_ProcessArg(Draw3DScene, &Scene);
         fpscount++;

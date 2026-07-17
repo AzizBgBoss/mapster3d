@@ -4,6 +4,8 @@
 
 #define NUM_MODELS (MAX_TREES + MAX_NPCS + MAX_ITEMS)
 
+#define SCREEN_WIDTH 256
+#define SCREEN_HEIGHT 192
 #define TARGET_FPS 60
 #define FPS_TIME ((1.0f / TARGET_FPS) * 1.0f)
 
@@ -35,6 +37,7 @@ enum // NPC targets
 
 enum // Item IDs
 {
+    ITEM_NONE,
     ITEM_APPLE,
     ITEM_ORANGE,
 
