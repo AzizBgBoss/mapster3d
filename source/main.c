@@ -268,7 +268,10 @@ int main(int argc, char *argv[])
     for (int i = 0; i < MAX_ITEMS; i++)
         createItem(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, rando(1, ITEMS), 1);
     for (int i = 0; i < MAX_NPCS; i++)
+    {
         spawnNpc(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE);
+        giveInventory(&npcs[i].inventory, rando(1, ITEMS), rando(1, 4));
+    }
     /*
     int fpscount = 0;
     int oldsec = 0;
@@ -277,14 +280,35 @@ int main(int argc, char *argv[])
     timerStart(0, ClockDivider_1024, 0, NULL); // more precise than time()
     oldTime = timerElapsed(0) / (float)(BUS_CLOCK / 1024);
 
-    giveInventory(&player.inventory, ITEM_APPLE, 1);
-    setHighlightedModel(npcs[0].modelID);
-
     while (1)
     {
         delta = (timerElapsed(0) / (float)(BUS_CLOCK / 1024) - oldTime) / FPS_TIME;
         oldTime = timerElapsed(0) / (float)(BUS_CLOCK / 1024);
         NE_WaitForVBL(0);
+
+        // ========================= Update selection ================================
+
+        int selectedModel = -1;
+        uint8_t selectionType = -1;
+        uint8_t selectionParam = 0;
+        for (int i = 0; i < MAX_ITEMS; i++)
+        {
+            if (items[i].active && isInPlayerRange(items[i].x, items[i].z, 0.1f) &&
+                isInSight(player.x, player.y, player.z,
+                          cosf(player.pitch) * sinf(player.yaw), sinf(player.pitch), cosf(player.pitch) * cosf(player.yaw),
+                          items[i].x, items[i].y, items[i].z))
+            {
+                selectedModel = items[i].modelID;
+                selectionType = SELECTION_ITEM;
+                selectionParam = i;
+                break;
+            }
+        }
+
+        if (selectedModel != -1)
+            setHighlightedModel(selectedModel);
+        else
+            setHighlightedModel(-1);
 
         // ========================= Controls ========================================
 
@@ -312,6 +336,24 @@ int main(int argc, char *argv[])
         if (keys & KEY_B)
         {
             moveForward(&player.x, &player.z, player.yaw, -player.speed, -1);
+        }
+
+        keys = keysDown();
+
+        if (keys & KEY_L)
+        {
+            if (selectionType == SELECTION_ITEM)
+            {
+                if (player.inventory.itemID == ITEM_NONE || items[selectionParam].inventory.itemID == player.inventory.itemID)
+                {
+                    if (player.inventory.quantity < 3)
+                        addItemQuantity(selectionParam, -giveInventory(&player.inventory, items[selectionParam].inventory.itemID, items[selectionParam].inventory.quantity));
+                    else
+                        alert("Your can't pick up more items!");
+                }
+                else
+                    alert("You can't pick up a different item from the one you're holding!");
+            }
         }
 
         // ========================= Update Player ===================================
@@ -353,12 +395,37 @@ int main(int argc, char *argv[])
         // ========================= Update Bottom Screen UI =========================
 
         clearPrint();
-        printSmart(0, 0, itemNames[player.inventory.itemID]);
+        printSmart(0, 0, "Holding ");
         if (player.inventory.quantity > 0 && player.inventory.itemID != ITEM_NONE)
         {
-            printSmartDirect(" x ");
             printValDirect(player.inventory.quantity);
+            printSmartDirect(" ");
         }
+        printSmartDirect(itemNames[player.inventory.itemID]);
+        if (player.inventory.quantity > 1 && player.inventory.itemID != ITEM_NONE)
+        {
+            printSmartDirect("s");
+        }
+
+        if (selectionType == SELECTION_ITEM)
+        {
+            printSmartDirect("\nPress L to pickup ");
+            printValDirect(items[selectionParam].inventory.quantity);
+            printSmartDirect(" ");
+            printSmartDirect(itemNames[items[selectionParam].inventory.itemID]);
+            if (items[selectionParam].inventory.quantity > 1 && items[selectionParam].inventory.itemID != ITEM_NONE)
+            {
+                printSmartDirect("s");
+            }
+        }
+
+        if (time(NULL) < alertTime)
+        {
+            printSmartDirect("\n\n");
+            printSmartDirect(alertText);
+        }
+
+        // ========================= Render Scene ====================================
 
         NE_ProcessArg(Draw3DScene, &Scene);
         // fpscount++;

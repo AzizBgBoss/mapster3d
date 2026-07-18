@@ -30,7 +30,7 @@ typedef struct
     Inventory inventory;
 } Player;
 
-Player player = {0, 0, 0, 0, 0, 0.02f, {ITEM_NONE, 0}};
+Player player = {0, 0, 0, 0, 0, 0.02f, {ITEM_NONE, 0, -1}};
 
 typedef struct
 {
@@ -119,3 +119,6 @@ float terrainNormal[TERRAIN_SIZE - 1][TERRAIN_SIZE - 1][2][3] = {0};
 
 int highlightedModel = -1;
 int highlightedModelID = -1;
+
+char alertText[64];
+uint32_t alertTime = 0;

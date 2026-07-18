@@ -43,3 +43,10 @@ enum // Item IDs
 
     ITEMS,
 };
+
+enum // Selection types
+{
+    SELECTION_NONE,
+    SELECTION_ITEM,
+    SELECTION_NPC,
+};

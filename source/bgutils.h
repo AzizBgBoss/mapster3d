@@ -21,7 +21,7 @@ void clearPrint()
     cy = 0;
     for (int y = 0; y < SCREEN_HEIGHT / 16; y++)
     {
-        for (int x = 0; x < SCREEN_WIDTH / 16; x++)
+        for (int x = 0; x < SCREEN_WIDTH / 8; x++)
         {
             BgSet4Tile(x, y, ' '); // Clear the screen
         }

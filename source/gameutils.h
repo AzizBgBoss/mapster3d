@@ -269,7 +269,7 @@ void updateNpc(Npc *npc, uint8_t id)
 
 int giveInventory(Inventory *inventory, uint8_t itemID, uint8_t quantity)
 {
-    int space = 0;
+    int space = 0; // number of items successfully taken
     if (inventory->itemID == ITEM_NONE)
     {
         inventory->itemID = itemID;
@@ -287,14 +287,16 @@ int giveInventory(Inventory *inventory, uint8_t itemID, uint8_t quantity)
     }
     else if (inventory->itemID == itemID)
     {
-        if (inventory->quantity > 3)
+        int room = 3 - inventory->quantity;
+        if (room <= 0)
         {
             space = 0;
         }
         else
         {
-            inventory->quantity = 3;
-            space = 3 - inventory->quantity;
+            int add = (quantity < room) ? quantity : room;
+            inventory->quantity += add;
+            space = add;
         }
     }
     else if (inventory->itemID != itemID)
@@ -306,8 +308,8 @@ int giveInventory(Inventory *inventory, uint8_t itemID, uint8_t quantity)
     {
         inventory->itemID = ITEM_NONE;
         inventory->quantity = 0;
-        inventory->modelID = -1;
         Scene.activeModel[inventory->modelID] = false;
+        inventory->modelID = -1;
     }
 
     return space;
@@ -336,16 +338,25 @@ void setHighlightedModel(int id)
         return;
     if (id == -1)
     {
+        Scene.activeModel[highlightedModelID] = false;
         highlightedModelID = -1;
         return;
     }
     if (highlightedModelID == -1)
     {
         highlightedModelID = createModel(0, 0, 0, 0, 0, 0, Scene.modelsRef[id], HighlightMaterial);
-    } else {
+    }
+    else
+    {
         Scene.activeModel[highlightedModelID] = false;
         highlightedModelID = createModel(0, 0, 0, 0, 0, 0, Scene.modelsRef[id], HighlightMaterial);
     }
     NE_ModelScale(Scene.Model[highlightedModelID], MODEL_SCALE * 1.08f, MODEL_SCALE * 1.08f, MODEL_SCALE * 1.08f);
     highlightedModel = id;
+}
+
+void alert(const char *message)
+{
+    strcpy(alertText, message);
+    alertTime = time(NULL) + 5;
 }
