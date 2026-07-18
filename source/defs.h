@@ -54,4 +54,5 @@ enum // Selection types
     SELECTION_NONE,
     SELECTION_ITEM,
     SELECTION_NPC,
+    SELECTION_TREE,
 };

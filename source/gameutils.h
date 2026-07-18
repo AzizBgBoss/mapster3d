@@ -86,7 +86,7 @@ bool isSolid(float x, float z, int param) // if param == -1, we're checking the 
         return true;
     for (int i = 0; i < MAX_TREES; i++)
     {
-        if (trees[i].active && isInRange(x, z, trees[i].x, trees[i].z, dist))
+        if (trees[i].active && isInRange(x, z, trees[i].x, trees[i].z, dist * trees[i].level / 4.0f))
             return true;
     }
     /*
@@ -345,8 +345,6 @@ void syncHeldItem(float x, float y, float z, float yaw, float pitch, int modelID
 
 void setHighlightedModel(int id)
 {
-    if (id == highlightedModel)
-        return;
     if (id == -1)
     {
         Scene.activeModel[highlightedModelID] = false;
@@ -362,7 +360,7 @@ void setHighlightedModel(int id)
         Scene.activeModel[highlightedModelID] = false;
         highlightedModelID = createModel(0, 0, 0, 0, 0, 0, Scene.modelsRef[id], HighlightMaterial);
     }
-    NE_ModelScale(Scene.Model[highlightedModelID], MODEL_SCALE * 1.08f, MODEL_SCALE * 1.08f, MODEL_SCALE * 1.08f);
+    NE_ModelScale(Scene.Model[highlightedModelID], Scene.Model[id]->sx / 4096.0f * 1.08f, Scene.Model[id]->sy / 4096.0f * 1.08f, Scene.Model[id]->sz / 4096.0f * 1.08f);
     highlightedModel = id;
 }
 
@@ -377,7 +375,7 @@ void updateTree(Tree *tree, uint8_t id)
     while (tree->ageTime + (int)TREE_TRANSITION_TIME < time(NULL) && tree->level < 3)
     {
         tree->level++;
-        tree->ageTime += (int) TREE_TRANSITION_TIME;
+        tree->ageTime += (int)TREE_TRANSITION_TIME;
         switch (tree->level)
         {
         case 1:

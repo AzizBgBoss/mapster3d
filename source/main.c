@@ -275,9 +275,9 @@ int main(int argc, char *argv[])
 
     for (int i = 0; i < MAX_TREES; i++)
         createTree(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, rando(ITEM_APPLE, ITEM_ORANGE + 1));
-    for (int i = 0; i < 0; i++)
+    for (int i = 0; i < MAX_ITEMS; i++)
         createItem(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, rando(ITEM_APPLE, ITEM_ORANGE + 1), 1);
-    for (int i = 0; i < 1; i++)
+    for (int i = 0; i < MAX_NPCS; i++)
     {
         spawnNpc(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE);
     }
@@ -319,6 +319,18 @@ int main(int argc, char *argv[])
                 {
                     selectedModel = npcs[i].modelID;
                     selectionType = SELECTION_NPC;
+                    selectionParam = i;
+                    break;
+                }
+            }
+
+        if (selectedModel == -1)
+            for (int i = 0; i < MAX_TREES; i++)
+            {
+                if (trees[i].active && isInPlayerRange(trees[i].x, trees[i].z, 0.2f))
+                {
+                    selectedModel = trees[i].modelID;
+                    selectionType = SELECTION_TREE;
                     selectionParam = i;
                     break;
                 }
@@ -511,6 +523,16 @@ int main(int argc, char *argv[])
                 printSmartDirect(" from ");
                 printSmartDirect(npcs[selectionParam].name);
             }
+        }
+        else if (selectionType == SELECTION_TREE)
+        {
+            printSmartDirect("\nTree ");
+            printValDirect(selectionParam + 1);
+            printSmartDirect(" of ");
+            printValDirect(MAX_TREES);
+            printSmartDirect("\nTime to grow: ");
+            printValDirect(trees[selectionParam].ageTime + (int)TREE_TRANSITION_TIME * (3 - trees[selectionParam].level) - time(NULL) + 1);
+            printSmartDirect(" seconds");
         }
 
         if (selectionType != SELECTION_NPC && player.inventory.itemID != ITEM_NONE)
