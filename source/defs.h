@@ -1,3 +1,5 @@
+#define VERSION "0.0a"
+
 #define MAX_TREES 16
 #define MAX_NPCS 16
 #define MAX_ITEMS 32

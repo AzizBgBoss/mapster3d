@@ -449,7 +449,7 @@ int main(int argc, char *argv[])
         {
             printSmartDirect("s");
         }
-        
+
         printSmartDirect("\n");
 
         if (selectionType == SELECTION_ITEM)
@@ -510,6 +510,8 @@ int main(int argc, char *argv[])
             printSmartDirect("\n\n");
             printSmartDirect(alertText);
         }
+
+        print(0, 11, "Mapster3D v" VERSION " by AzizBgBoss");
 
         // ========================= Render Scene ====================================
 
