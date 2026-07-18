@@ -293,7 +293,7 @@ int main(int argc, char *argv[])
         uint8_t selectionParam = 0;
         for (int i = 0; i < MAX_ITEMS; i++)
         {
-            if (items[i].active && isInPlayerRange(items[i].x, items[i].z, 0.1f) &&
+            if (items[i].active && isInPlayerRange(items[i].x, items[i].z, 0.2f) &&
                 isInSight(player.x, player.y, player.z,
                           cosf(player.pitch) * sinf(player.yaw), sinf(player.pitch), cosf(player.pitch) * cosf(player.yaw),
                           items[i].x, items[i].y, items[i].z))
