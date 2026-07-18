@@ -233,6 +233,7 @@ bool spawnNpc(float x, float z)
                 npcs[i].inventory.itemID = ITEM_NONE;
                 npcs[i].inventory.quantity = 0;
                 npcs[i].inventory.modelID = -1;
+                strcpy(npcs[i].name, names[rando(0, NAMES)]);
                 return true;
             }
             return false;
@@ -243,19 +244,30 @@ bool spawnNpc(float x, float z)
 
 void updateNpc(Npc *npc, uint8_t id)
 {
-    if (npc->target == TARGET_PLAYER)
+    if (selectionType == SELECTION_NPC && selectionParam == id)
     {
-        npc->yaw = atan2f(player.x - npc->x, player.z - npc->z);
-        npc->speed = 0.01f;
+        float diff = atan2f(player.x - npc->x, player.z - npc->z) - npc->yaw;
+        diff -= 2.0f * M_PI * floorf((diff + M_PI) / (2.0f * M_PI)); // wrap to [-pi, pi]
+        npc->yaw += clamp(diff, -0.1f, 0.1f);
+        npc->speed = 0.0f;
     }
-    else if (npc->target == TARGET_RANDOM)
+    else
     {
-        if (frames % F_SECOND * 5 == 0)
+        if (npc->target == TARGET_PLAYER)
         {
-            npc->yaw = (float)rand() / RAND_MAX * 2.0f * M_PI;
+            npc->yaw = atan2f(player.x - npc->x, player.z - npc->z);
+            npc->speed = 0.01f;
         }
-        npc->speed = 0.01f;
+        else if (npc->target == TARGET_RANDOM)
+        {
+            if (frames % F_SECOND * 5 == 0)
+            {
+                npc->yaw = (float)rand() / RAND_MAX * 2.0f * M_PI;
+            }
+            npc->speed = 0.01f;
+        }
     }
+    npc->yaw = fmodf(npc->yaw, 2.0f * (float)M_PI);
 
     moveForward(&npc->x, &npc->z, npc->yaw, npc->speed, id);
 
@@ -267,7 +279,7 @@ void updateNpc(Npc *npc, uint8_t id)
     NE_ModelSetRot(Scene.Model[npc->modelID], 0, RAD2ANG(npc->yaw), 0);
 }
 
-int giveInventory(Inventory *inventory, uint8_t itemID, uint8_t quantity)
+int giveInventory(Inventory *inventory, uint8_t itemID, int quantity)
 {
     int space = 0; // number of items successfully taken
     if (inventory->itemID == ITEM_NONE)
@@ -287,17 +299,13 @@ int giveInventory(Inventory *inventory, uint8_t itemID, uint8_t quantity)
     }
     else if (inventory->itemID == itemID)
     {
-        int room = 3 - inventory->quantity;
-        if (room <= 0)
-        {
-            space = 0;
-        }
-        else
-        {
-            int add = (quantity < room) ? quantity : room;
-            inventory->quantity += add;
-            space = add;
-        }
+        int add = quantity;
+        if (inventory->quantity + add > 3)
+            add = 3 - inventory->quantity;
+        else if (inventory->quantity + add < 0)
+            add = -inventory->quantity;
+        inventory->quantity += add;
+        space = add;
     }
     else if (inventory->itemID != itemID)
     {

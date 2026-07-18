@@ -1,8 +1,8 @@
 const char *itemNames[ITEMS] =
-{
-    "Nothing",
-    "Apple",
-    "Orange",
+    {
+        "Nothing",
+        "Apple",
+        "Orange",
 };
 
 typedef struct
@@ -49,10 +49,24 @@ typedef struct
     float yaw;
     float speed;
     uint8_t target;
+    char name[16];
     Inventory inventory;
 } Npc;
 
 Npc npcs[MAX_NPCS] = {0};
+
+const char names[][16] = {
+    "Jeremy",
+    "Lamar",
+    "Alyssa",
+    "Gabriel",
+    "Natalie",
+    "Jamal",
+    "Jared",
+    "AzizBgBoss",
+};
+
+#define NAMES sizeof(names) / sizeof(names[0])
 
 typedef struct
 {
@@ -122,3 +136,7 @@ int highlightedModelID = -1;
 
 char alertText[64];
 uint32_t alertTime = 0;
+
+int selectedModel = -1;
+uint8_t selectionType = -1;
+uint8_t selectionParam = 0;

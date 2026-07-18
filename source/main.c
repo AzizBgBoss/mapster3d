@@ -270,7 +270,6 @@ int main(int argc, char *argv[])
     for (int i = 0; i < MAX_NPCS; i++)
     {
         spawnNpc(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE);
-        giveInventory(&npcs[i].inventory, rando(1, ITEMS), rando(1, 4));
     }
     /*
     int fpscount = 0;
@@ -288,15 +287,12 @@ int main(int argc, char *argv[])
 
         // ========================= Update selection ================================
 
-        int selectedModel = -1;
-        uint8_t selectionType = -1;
-        uint8_t selectionParam = 0;
+        selectedModel = -1;
+        selectionType = -1;
+        selectionParam = 0;
         for (int i = 0; i < MAX_ITEMS; i++)
         {
-            if (items[i].active && isInPlayerRange(items[i].x, items[i].z, 0.2f) &&
-                isInSight(player.x, player.y, player.z,
-                          cosf(player.pitch) * sinf(player.yaw), sinf(player.pitch), cosf(player.pitch) * cosf(player.yaw),
-                          items[i].x, items[i].y, items[i].z))
+            if (items[i].active && isInPlayerRange(items[i].x, items[i].z, 0.2f))
             {
                 selectedModel = items[i].modelID;
                 selectionType = SELECTION_ITEM;
@@ -304,6 +300,19 @@ int main(int argc, char *argv[])
                 break;
             }
         }
+
+        if (selectedModel == -1)
+            for (int i = 0; i < MAX_NPCS; i++)
+            {
+                if (npcs[i].active && isInPlayerRange(npcs[i].x, npcs[i].z, 0.2f) &&
+                    (npcs[i].inventory.quantity > 0 || player.inventory.quantity > 0)) // no need to highlight if there's nothing to take or give
+                {
+                    selectedModel = npcs[i].modelID;
+                    selectionType = SELECTION_NPC;
+                    selectionParam = i;
+                    break;
+                }
+            }
 
         if (selectedModel != -1)
             setHighlightedModel(selectedModel);
@@ -342,22 +351,56 @@ int main(int argc, char *argv[])
 
         if (keys & KEY_L)
         {
-            if (selectionType == SELECTION_ITEM)
+            if (selectionType == SELECTION_ITEM) // Pickup item
             {
                 if (player.inventory.itemID == ITEM_NONE || items[selectionParam].inventory.itemID == player.inventory.itemID)
                 {
                     if (player.inventory.quantity < 3)
                         addItemQuantity(selectionParam, -giveInventory(&player.inventory, items[selectionParam].inventory.itemID, items[selectionParam].inventory.quantity));
                     else
-                        alert("Your can't pick up more items!");
+                        alert("You can't hold more items!");
                 }
                 else
                     alert("You can't pick up a different item from the one you're holding!");
+            }
+            else if (selectionType == SELECTION_NPC) // Take from NPC
+            {
+                if (player.inventory.itemID == ITEM_NONE || player.inventory.itemID == npcs[selectionParam].inventory.itemID)
+                {
+                    if (player.inventory.quantity < 3)
+                        giveInventory(&npcs[selectionParam].inventory, npcs[selectionParam].inventory.itemID, -giveInventory(&player.inventory, npcs[selectionParam].inventory.itemID, npcs[selectionParam].inventory.quantity));
+                    else
+                        alert("You can't hold more items!");
+                }
+                else
+                    alert("You can't take a different item from the one you're holding!");
+            }
+        }
+
+        if (keys & KEY_R)
+        {
+            if (selectionType == SELECTION_NPC) // Give to NPC
+            {
+                if (npcs[selectionParam].inventory.itemID == ITEM_NONE || npcs[selectionParam].inventory.itemID == player.inventory.itemID)
+                {
+                    if (npcs[selectionParam].inventory.quantity < 3)
+                        giveInventory(&player.inventory, player.inventory.itemID, -giveInventory(&npcs[selectionParam].inventory, player.inventory.itemID, player.inventory.quantity));
+                    else
+                        alert("The NPC can't hold more items!");
+                }
+                else
+                    alert("You can't give the NPC a different item from the one they're holding!");
+            }
+            else if (player.inventory.itemID != ITEM_NONE) // Drop item
+            {
+                createItem(Scene.Model[player.inventory.modelID]->x / 4096.0f, Scene.Model[player.inventory.modelID]->z / 4096.0f, player.inventory.itemID, player.inventory.quantity);
+                giveInventory(&player.inventory, player.inventory.itemID, -player.inventory.quantity);
             }
         }
 
         // ========================= Update Player ===================================
 
+        player.yaw = fmodf(player.yaw, 2.0f * (float)M_PI);
         player.y = getHeightAt(player.x, player.z);
 
         NE_CameraSet(Scene.Camera,
@@ -406,6 +449,8 @@ int main(int argc, char *argv[])
         {
             printSmartDirect("s");
         }
+        
+        printSmartDirect("\n");
 
         if (selectionType == SELECTION_ITEM)
         {
@@ -414,6 +459,47 @@ int main(int argc, char *argv[])
             printSmartDirect(" ");
             printSmartDirect(itemNames[items[selectionParam].inventory.itemID]);
             if (items[selectionParam].inventory.quantity > 1 && items[selectionParam].inventory.itemID != ITEM_NONE)
+            {
+                printSmartDirect("s");
+            }
+        }
+        else if (selectionType == SELECTION_NPC)
+        {
+            if (npcs[selectionParam].inventory.itemID == ITEM_NONE || npcs[selectionParam].inventory.itemID == player.inventory.itemID)
+            {
+                printSmartDirect("\nPress R to give ");
+                printValDirect(player.inventory.quantity);
+                printSmartDirect(" ");
+                printSmartDirect(itemNames[player.inventory.itemID]);
+                if (player.inventory.quantity > 1 && player.inventory.itemID != ITEM_NONE)
+                {
+                    printSmartDirect("s");
+                }
+                printSmartDirect(" to ");
+                printSmartDirect(npcs[selectionParam].name);
+            }
+            if (player.inventory.itemID == ITEM_NONE || player.inventory.itemID == npcs[selectionParam].inventory.itemID)
+            {
+                printSmartDirect("\nPress L to take ");
+                printValDirect(npcs[selectionParam].inventory.quantity);
+                printSmartDirect(" ");
+                printSmartDirect(itemNames[npcs[selectionParam].inventory.itemID]);
+                if (npcs[selectionParam].inventory.quantity > 1 && npcs[selectionParam].inventory.itemID != ITEM_NONE)
+                {
+                    printSmartDirect("s");
+                }
+                printSmartDirect(" from ");
+                printSmartDirect(npcs[selectionParam].name);
+            }
+        }
+
+        if (selectionType != SELECTION_NPC && player.inventory.itemID != ITEM_NONE)
+        {
+            printSmartDirect("\nPress R to drop ");
+            printValDirect(player.inventory.quantity);
+            printSmartDirect(" ");
+            printSmartDirect(itemNames[player.inventory.itemID]);
+            if (player.inventory.quantity > 1 && player.inventory.itemID != ITEM_NONE)
             {
                 printSmartDirect("s");
             }
