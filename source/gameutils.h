@@ -154,13 +154,13 @@ int createModel(float x, float y, float z, float pitch, float yaw, float roll, c
     return -1;
 }
 
-bool createTree(float x, float z)
+bool createTree(float x, float z, uint8_t itemType)
 {
     for (int i = 0; i < MAX_TREES; i++)
     {
         if (!trees[i].active)
         {
-            int id = createModel(x, getHeightAt(x, z), z, 0, rando(0, 512), 0, tree_bin, TreeMaterial);
+            int id = createModel(x, getHeightAt(x, z), z, 0, rando(0, 512), 0, plant_0_bin, Plant0Material);
             if (id != -1)
             {
                 trees[i].active = true;
@@ -168,6 +168,9 @@ bool createTree(float x, float z)
                 trees[i].x = x;
                 trees[i].y = getHeightAt(x, z);
                 trees[i].z = z;
+                trees[i].itemType = itemType;
+                trees[i].ageTime = time(NULL);
+                trees[i].level = 0;
                 return true;
             }
             return false;
@@ -367,4 +370,33 @@ void alert(const char *message)
 {
     strcpy(alertText, message);
     alertTime = time(NULL) + 5;
+}
+
+void updateTree(Tree *tree, uint8_t id)
+{
+    while (tree->ageTime + (int)TREE_TRANSITION_TIME < time(NULL) && tree->level < 3)
+    {
+        tree->level++;
+        tree->ageTime += (int) TREE_TRANSITION_TIME;
+        switch (tree->level)
+        {
+        case 1:
+            Scene.activeModel[tree->modelID] = false;
+            tree->modelID = createModel(tree->x, tree->y, tree->z, 0, rando(0, 512), 0, plant_1_bin, Plant1Material);
+            break;
+        case 2:
+            Scene.activeModel[tree->modelID] = false;
+            tree->modelID = createModel(tree->x, tree->y, tree->z, 0, rando(0, 512), 0, plant_2_bin, Plant2Material);
+            break;
+        case 3:
+            Scene.activeModel[tree->modelID] = false;
+            tree->modelID = createModel(tree->x, tree->y, tree->z, 0, rando(0, 512), 0, tree_bin, TreeMaterial);
+            break;
+        }
+    }
+    if (tree->level > 0 && tree->level < 3)
+    {
+        float diff = ((time(NULL) - tree->ageTime) / TREE_TRANSITION_TIME) * GROWTH_FACTOR;
+        NE_ModelScale(Scene.Model[tree->modelID], MODEL_SCALE * (1 + diff), MODEL_SCALE * (1 + diff), MODEL_SCALE * (1 + diff));
+    }
 }

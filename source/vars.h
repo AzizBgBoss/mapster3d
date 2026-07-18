@@ -37,6 +37,9 @@ typedef struct
     bool active;
     int modelID;
     float x, y, z;
+    uint8_t itemType;
+    uint32_t ageTime;
+    uint8_t level;
 } Tree;
 
 Tree trees[MAX_TREES] = {0};
@@ -124,8 +127,7 @@ typedef struct
 
 uint32_t frames = 0;
 
-NE_Material *TerrainMaterial, *TreeMaterial, *NpcMaterial, *AppleMaterial, *OrangeMaterial;
-NE_Palette *TerrainPalette, *TreePalette, *NpcPalette, *ApplePalette, *OrangePalette;
+NE_Material *TerrainMaterial, *TreeMaterial, *NpcMaterial, *AppleMaterial, *OrangeMaterial, *Plant0Material, *Plant1Material, *Plant2Material;
 
 NE_Material *HighlightMaterial;
 
@@ -135,6 +137,9 @@ const MaterialRef materialsRef[] = {
     {npc_textureBitmap, npc_texturePal},
     {apple_textureBitmap, apple_texturePal},
     {orange_textureBitmap, orange_texturePal},
+    {plant_0_textureBitmap, plant_0_texturePal},
+    {plant_1_textureBitmap, plant_1_texturePal},
+    {plant_2_textureBitmap, plant_2_texturePal},
 };
 
 #define SIZE_MATERIALS_REF (sizeof(materialsRef) / sizeof(MaterialRef))

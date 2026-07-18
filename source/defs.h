@@ -16,6 +16,9 @@
 #define MODEL_SCALE 0.125f
 #define RENDER 4.0f
 #define SIGHT_BACKUP 0.3f  // this pulls back your sight, useful when you don't see stuff when looking down
+#define GROWTH_FACTOR 0.5f
+
+#define TREE_TRANSITION_TIME 5.0f // seconds
 
 #define TEX_SCALE 256
 #define TEX_WIDTH  128.0f

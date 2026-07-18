@@ -13,6 +13,12 @@ Yours truly, past AzizBgBoss
 
 #include "tree_bin.h"
 #include "tree_texture.h"
+#include "plant_0_bin.h"
+#include "plant_0_texture.h"
+#include "plant_1_bin.h"
+#include "plant_1_texture.h"
+#include "plant_2_bin.h"
+#include "plant_2_texture.h"
 #include "npc_bin.h"
 #include "npc_texture.h"
 #include "apple_bin.h"
@@ -248,6 +254,10 @@ int main(int argc, char *argv[])
     itemModels[1] = (ModelRef){apple_bin, materials[3].mat};
     itemModels[2] = (ModelRef){orange_bin, materials[4].mat};
 
+    Plant0Material = materials[5].mat;
+    Plant1Material = materials[6].mat;
+    Plant2Material = materials[7].mat;
+
     HighlightMaterial = NE_MaterialCreate();
     NE_MaterialSetProperties(HighlightMaterial,
                              RGB15(0, 0, 0),    // Diffuse
@@ -264,10 +274,10 @@ int main(int argc, char *argv[])
     }
 
     for (int i = 0; i < MAX_TREES; i++)
-        createTree(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE);
-    for (int i = 0; i < MAX_ITEMS; i++)
-        createItem(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, rando(1, ITEMS), 1);
-    for (int i = 0; i < MAX_NPCS; i++)
+        createTree(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, rando(ITEM_APPLE, ITEM_ORANGE + 1));
+    for (int i = 0; i < 0; i++)
+        createItem(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, rando(ITEM_APPLE, ITEM_ORANGE + 1), 1);
+    for (int i = 0; i < 1; i++)
     {
         spawnNpc(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE);
     }
@@ -424,6 +434,16 @@ int main(int argc, char *argv[])
             {
                 updateNpc(&npcs[i], i);
                 syncHeldItem(npcs[i].x, npcs[i].y, npcs[i].z, npcs[i].yaw, 0, npcs[i].inventory.modelID);
+            }
+        }
+
+        // ========================= Update Trees ====================================
+
+        for (int i = 0; i < MAX_TREES; i++)
+        {
+            if (trees[i].active)
+            {
+                updateTree(&trees[i], i);
             }
         }
 
