@@ -144,7 +144,23 @@ void Draw3DScene(void *arg)
     qsort(visible, visibleCount, sizeof(VisibleModel), compareModelDist);
 
     for (int i = 0; i < visibleCount; i++)
+    {
+        if (highlightedModelID != -1 && visible[i].model == Scene->Model[highlightedModelID])
+            NE_PolyFormat(
+                31,
+                0,
+                NE_LIGHT_ALL,
+                NE_CULL_FRONT,
+                NE_FOG_ENABLE);
+        else
+            NE_PolyFormat(
+                31,
+                0,
+                NE_LIGHT_ALL,
+                NE_CULL_NONE,
+                NE_FOG_ENABLE);
         NE_ModelDraw(visible[i].model);
+    }
 
     printf("\nPolys: %d %d%%       \nVertices: %d %d%%       \nCPU: %d%%       ",
            NE_GetPolygonCount(), NE_GetPolygonCount() / 2048 * 100, NE_GetVertexCount(), NE_GetVertexCount() / 2048 * 100, NE_GetCPUPercent());
@@ -232,6 +248,14 @@ int main(int argc, char *argv[])
     itemModels[1] = (ModelRef){apple_bin, materials[3].mat};
     itemModels[2] = (ModelRef){orange_bin, materials[4].mat};
 
+    HighlightMaterial = NE_MaterialCreate();
+    NE_MaterialSetProperties(HighlightMaterial,
+                             RGB15(0, 0, 0),    // Diffuse
+                             RGB15(31, 31, 31), // Ambient
+                             RGB15(0, 0, 0),    // Specular
+                             RGB15(0, 0, 0),    // Emission
+                             false, false);     // Vertex color, use shininess table
+
     // Allocate space for everything
     for (int i = 0; i < NUM_MODELS; i++)
     {
@@ -240,10 +264,11 @@ int main(int argc, char *argv[])
     }
 
     for (int i = 0; i < MAX_TREES; i++)
-        createTree(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE);
+        createTree(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE);
     for (int i = 0; i < MAX_ITEMS; i++)
-        createItem(rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f) * SCALE, rando(1, ITEMS), 1);
-    spawnNpc(2, 2);
+        createItem(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, rando(1, ITEMS), 1);
+    for (int i = 0; i < MAX_NPCS; i++)
+        spawnNpc(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE);
     /*
     int fpscount = 0;
     int oldsec = 0;
@@ -253,6 +278,7 @@ int main(int argc, char *argv[])
     oldTime = timerElapsed(0) / (float)(BUS_CLOCK / 1024);
 
     giveInventory(&player.inventory, ITEM_APPLE, 1);
+    setHighlightedModel(npcs[0].modelID);
 
     while (1)
     {
@@ -314,6 +340,14 @@ int main(int argc, char *argv[])
                 updateNpc(&npcs[i], i);
                 syncHeldItem(npcs[i].x, npcs[i].y, npcs[i].z, npcs[i].yaw, 0, npcs[i].inventory.modelID);
             }
+        }
+
+        // ========================= Update Game Logic ===============================
+
+        if (highlightedModelID != -1)
+        {
+            NE_ModelSetCoord(Scene.Model[highlightedModelID], Scene.Model[highlightedModel]->x / 4096.0f, Scene.Model[highlightedModel]->y / 4096.0f, Scene.Model[highlightedModel]->z / 4096.0f);
+            NE_ModelSetRot(Scene.Model[highlightedModelID], Scene.Model[highlightedModel]->rx, Scene.Model[highlightedModel]->ry, Scene.Model[highlightedModel]->rz);
         }
 
         // ========================= Update Bottom Screen UI =========================

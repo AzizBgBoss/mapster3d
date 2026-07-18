@@ -9,10 +9,8 @@ void BgSetTile(int x, int y, int tile)
 
 void BgSet4Tile(int x, int y, int tile)
 {
-    BgSetTile(x * 2, y * 2, tile * 4);
-    BgSetTile(x * 2 + 1, y * 2, tile * 4 + 1);
-    BgSetTile(x * 2, y * 2 + 1, tile * 4 + 2);
-    BgSetTile(x * 2 + 1, y * 2 + 1, tile * 4 + 3);
+    BgSetTile(x, y * 2, tile * 2);
+    BgSetTile(x, y * 2 + 1, tile * 2 + 1);
 }
 
 int cx, cy; // Current cursor position
@@ -45,7 +43,7 @@ void print(int x, int y, const char *text)
         }
         BgSet4Tile(x, y, (char)(*text));
         x++;
-        if (x > SCREEN_WIDTH / 16 - 1)
+        if (x > SCREEN_WIDTH / 8 - 1)
         {
             x = 0;
             y++;
@@ -77,7 +75,7 @@ void printValDirect(int value)
 
 void printSmart(int x, int y, const char *text)
 {
-    const int maxW = SCREEN_WIDTH / 16;
+    const int maxW = SCREEN_WIDTH / 8;
     const int maxH = SCREEN_HEIGHT / 16;
 
     while (*text)

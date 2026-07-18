@@ -142,6 +142,7 @@ int createModel(float x, float y, float z, float pitch, float yaw, float roll, c
         if (!Scene.activeModel[i])
         {
             Scene.activeModel[i] = true;
+            Scene.modelsRef[i] = data;
             NE_ModelLoadStaticMesh(Scene.Model[i], data);
             NE_ModelSetMaterial(Scene.Model[i], mat);
             NE_ModelSetCoord(Scene.Model[i], x, y, z);
@@ -327,4 +328,24 @@ void syncHeldItem(float x, float y, float z, float yaw, float pitch, int modelID
 
     NE_ModelSetCoord(Scene.Model[modelID], newX, newY, newZ);
     NE_ModelSetRot(Scene.Model[modelID], 0, RAD2ANG(yaw), 0);
+}
+
+void setHighlightedModel(int id)
+{
+    if (id == highlightedModel)
+        return;
+    if (id == -1)
+    {
+        highlightedModelID = -1;
+        return;
+    }
+    if (highlightedModelID == -1)
+    {
+        highlightedModelID = createModel(0, 0, 0, 0, 0, 0, Scene.modelsRef[id], HighlightMaterial);
+    } else {
+        Scene.activeModel[highlightedModelID] = false;
+        highlightedModelID = createModel(0, 0, 0, 0, 0, 0, Scene.modelsRef[id], HighlightMaterial);
+    }
+    NE_ModelScale(Scene.Model[highlightedModelID], MODEL_SCALE * 1.08f, MODEL_SCALE * 1.08f, MODEL_SCALE * 1.08f);
+    highlightedModel = id;
 }

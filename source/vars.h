@@ -58,6 +58,7 @@ typedef struct
 {
     NE_Camera *Camera;
     NE_Model *Model[NUM_MODELS];
+    uint8_t *modelsRef[NUM_MODELS];
     bool activeModel[NUM_MODELS];
 } SceneData;
 
@@ -92,6 +93,8 @@ uint32_t frames = 0;
 NE_Material *TerrainMaterial, *TreeMaterial, *NpcMaterial, *AppleMaterial, *OrangeMaterial;
 NE_Palette *TerrainPalette, *TreePalette, *NpcPalette, *ApplePalette, *OrangePalette;
 
+NE_Material *HighlightMaterial;
+
 const MaterialRef materialsRef[] = {
     {terrain_textureBitmap, terrain_texturePal},
     {tree_textureBitmap, tree_texturePal},
@@ -113,3 +116,6 @@ float delta;
 
 float terrainVertices[TERRAIN_SIZE][TERRAIN_SIZE][3] = {0};
 float terrainNormal[TERRAIN_SIZE - 1][TERRAIN_SIZE - 1][2][3] = {0};
+
+int highlightedModel = -1;
+int highlightedModelID = -1;
