@@ -42,6 +42,7 @@ typedef struct
     uint32_t ageTime;
     uint8_t level;
     Inventory inventory;
+    int modelIDs[3];
     uint8_t water;
 } Tree;
 

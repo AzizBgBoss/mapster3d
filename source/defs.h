@@ -4,9 +4,9 @@
 #define MAX_NPCS 16
 #define MAX_ITEMS 32
 
-#define NUM_MODELS (MAX_TREES * 3 + MAX_NPCS * 2 + MAX_ITEMS + 1 + 1)
+#define NUM_MODELS (MAX_TREES * 4 + MAX_NPCS * 2 + MAX_ITEMS + 1 + 1)
 /*
-    MAX_TREES * 5: 1 tree, up to 3 fruits
+    MAX_TREES * 4: 1 tree, up to 3 fruits
     MAX_NPCS * 2: 1 npc, up to 1 fruit
     MAX_ITEMS: 1 item
     1: player item

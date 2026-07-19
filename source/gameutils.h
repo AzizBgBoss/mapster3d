@@ -154,7 +154,7 @@ void moveForward(float *x, float *z, float yaw, float speed, int param)
         z[0] = -(TERRAIN_SIZE / 2.0f) * SCALE;
 }
 
-int giveInventoryPos(Inventory *inventory, uint8_t itemID, int quantity, float x, float y, float z)
+int giveInventoryNo(Inventory *inventory, uint8_t itemID, int quantity)
 {
     int space = 0; // number of items successfully taken
     if (inventory->itemID == ITEM_NONE)
@@ -170,7 +170,6 @@ int giveInventoryPos(Inventory *inventory, uint8_t itemID, int quantity, float x
             inventory->quantity = quantity;
             space = quantity;
         }
-        inventory->modelID = createModel(x, y, z, 0, 0, 0, itemModels[itemID].model, itemModels[itemID].mat); // it is mathematically impossible for this to return -1
     }
     else if (inventory->itemID == itemID)
     {
@@ -191,8 +190,6 @@ int giveInventoryPos(Inventory *inventory, uint8_t itemID, int quantity, float x
     {
         inventory->itemID = ITEM_NONE;
         inventory->quantity = 0;
-        Scene.activeModel[inventory->modelID] = false;
-        inventory->modelID = -1;
     }
 
     return space;
@@ -200,7 +197,47 @@ int giveInventoryPos(Inventory *inventory, uint8_t itemID, int quantity, float x
 
 int giveInventory(Inventory *inventory, uint8_t itemID, int quantity)
 {
-    return giveInventoryPos(inventory, itemID, quantity, 0, 0, 0);
+    if (inventory->itemID == ITEM_NONE)
+        inventory->modelID = createModel(0, 0, 0, 0, 0, 0, itemModels[itemID].model, itemModels[itemID].mat); // it is mathematically impossible for this to return -1
+    int pp = giveInventoryNo(inventory, itemID, quantity);
+    if (inventory->itemID == ITEM_NONE)
+    {
+        Scene.activeModel[inventory->modelID] = false;
+        inventory->modelID = -1;
+    }
+    return pp;
+}
+
+int giveInventoryTree(Tree *tree, uint8_t itemID, int quantity)
+{
+    const float treeItemPos[3][3] =
+        {
+            {0.05f, 0.15f, 0.05f},
+            {0.05f, 0.15f, -0.05f},
+            {-0.05f, 0.15f, 0.0f},
+        };
+    int pp = giveInventoryNo(&tree->inventory, tree->itemType, quantity);
+    if (pp != 0)
+    {
+        for (int i = 0; i < 3; i++)
+        {
+            if (tree->modelIDs[i] != -1 && Scene.activeModel[tree->modelIDs[i]])
+            {
+                Scene.activeModel[tree->modelIDs[i]] = false;
+                tree->modelIDs[i] = -1;
+            }
+        }
+        for (int i = 0; i < tree->inventory.quantity; i++)
+        {
+            float rx = treeItemPos[i][0] * cosf(tree->yaw) - treeItemPos[i][2] * sinf(tree->yaw);
+            float rz = treeItemPos[i][0] * sinf(tree->yaw) + treeItemPos[i][2] * cosf(tree->yaw);
+            tree->modelIDs[i] = createModel(tree->x + rx,
+                                            tree->y + treeItemPos[i][1],
+                                            tree->z + rz,
+                                            0, tree->yaw, 0, itemModels[itemID].model, itemModels[itemID].mat);
+        }
+    }
+    return pp;
 }
 
 bool createTree(float x, float z, uint8_t itemType)
@@ -225,6 +262,8 @@ bool createTree(float x, float z, uint8_t itemType)
                 trees[i].inventory.itemID = ITEM_NONE;
                 trees[i].inventory.quantity = 0;
                 trees[i].water = 67;
+                for (int j = 0; j < 3; j++)
+                    trees[i].modelIDs[j] = -1;
                 return true;
             }
             return false;
@@ -261,13 +300,7 @@ void updateTree(Tree *tree, uint8_t id)
         }
         else
         {
-            const float treeItemPos[3][3] =
-                {
-                    {0.1f, 0.1f, 0.1f},
-                    {0.2f, 0.2f, 0.2f},
-                    {0.3f, 0.3f, 0.3f},
-                };
-            giveInventoryPos(&tree->inventory, tree->itemType, 1, tree->x + treeItemPos[tree->inventory.quantity][0] * sinf(tree->yaw), tree->y + treeItemPos[tree->inventory.quantity][1], tree->z + treeItemPos[tree->inventory.quantity][2] * cosf(tree->yaw));
+            giveInventoryTree(&trees[id], tree->itemType, 1);
         }
     }
     if (tree->water > 0 && time(NULL) != oldTime && tree->inventory.quantity < 3)

@@ -397,6 +397,18 @@ int main(int argc, char *argv[])
                 else
                     alert("You can't take a different item from the one you're holding!");
             }
+            else if (selectionType == SELECTION_TREE) // Take from tree
+            {
+                if (player.inventory.itemID == ITEM_NONE || player.inventory.itemID == trees[selectionParam].inventory.itemID)
+                {
+                    if (player.inventory.quantity < 3)
+                        giveInventoryTree(&trees[selectionParam], trees[selectionParam].inventory.itemID, -giveInventory(&player.inventory, trees[selectionParam].inventory.itemID, trees[selectionParam].inventory.quantity));
+                    else
+                        alert("You can't hold more items!");
+                }
+                else
+                    alert("You can't take a different item from the one you're holding!");
+            }
         }
 
         if (keys & KEY_R)
@@ -438,7 +450,7 @@ int main(int argc, char *argv[])
 
                      0, 1, 0);
 
-        syncHeldItem(player.x, player.y, player.z, player.yaw, player.pitch, player.inventory.modelID, 1.0f);
+        syncHeldItem(player.x, player.y, player.z, player.yaw, player.pitch, player.inventory.modelID, 0.1f);
 
         // ========================= Update NPCs =====================================
 
@@ -447,7 +459,7 @@ int main(int argc, char *argv[])
             if (npcs[i].active)
             {
                 updateNpc(&npcs[i], i);
-                syncHeldItem(npcs[i].x, npcs[i].y, npcs[i].z, npcs[i].yaw, 0, npcs[i].inventory.modelID, 0.5f);
+                syncHeldItem(npcs[i].x, npcs[i].y, npcs[i].z, npcs[i].yaw, 0, npcs[i].inventory.modelID, 0.05f);
             }
         }
 
@@ -528,17 +540,32 @@ int main(int argc, char *argv[])
         }
         else if (selectionType == SELECTION_TREE)
         {
-            printSmartDirect("\nTree ");
-            printValDirect(selectionParam + 1);
-            printSmartDirect(" of ");
-            printValDirect(MAX_TREES);
-            printSmartDirect("\nTime to grow: ");
-            printValDirect(trees[selectionParam].ageTime + (int)TREE_TRANSITION_TIME * (3 - trees[selectionParam].level) - time(NULL) + 1);
-            printSmartDirect(" seconds\nWater: ");
+            printSmartDirect("\n");
+            printSmartDirect(itemNames[trees[selectionParam].itemType]);
+            printSmartDirect(" tree");
+            if (trees[selectionParam].level < 3)
+            {
+                printSmartDirect("\nTime to grow: ");
+                printValDirect(trees[selectionParam].ageTime + (int)TREE_TRANSITION_TIME * (3 - trees[selectionParam].level) - time(NULL) + 1);
+            }
+            printSmartDirect(" seconds");
+                printSmartDirect("\nWater: ");
             printValDirect(trees[selectionParam].water);
             printSmartDirect("L / ");
             printValDirect((trees[selectionParam].level + 1) * (int)TREE_TRANSITION_TIME / 2);
             printSmartDirect("L");
+            if (trees[selectionParam].inventory.quantity > 0)
+            {
+                printSmartDirect("\n\nPress L to harvest ");
+                printValDirect(trees[selectionParam].inventory.quantity);
+                printSmartDirect(" ");
+                printSmartDirect(itemNames[trees[selectionParam].inventory.itemID]);
+                if (trees[selectionParam].inventory.quantity > 1 && trees[selectionParam].inventory.itemID != ITEM_NONE)
+                {
+                    printSmartDirect("s");
+                }
+                printSmartDirect(" from the tree");
+            }
         }
 
         if (selectionType != SELECTION_NPC && player.inventory.itemID != ITEM_NONE)
