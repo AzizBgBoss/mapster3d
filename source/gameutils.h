@@ -261,7 +261,7 @@ bool createTree(float x, float z, uint8_t itemType)
                 trees[i].level = 0;
                 trees[i].inventory.itemID = ITEM_NONE;
                 trees[i].inventory.quantity = 0;
-                trees[i].water = 67;
+                trees[i].water = 60;
                 for (int j = 0; j < 3; j++)
                     trees[i].modelIDs[j] = -1;
                 return true;
@@ -271,8 +271,6 @@ bool createTree(float x, float z, uint8_t itemType)
     }
     return false;
 }
-
-uint32_t oldTimer = 0;
 
 void updateTree(Tree *tree, uint8_t id)
 {
@@ -300,13 +298,18 @@ void updateTree(Tree *tree, uint8_t id)
         }
         else
         {
+            tree->ageTime = time(NULL);
             giveInventoryTree(&trees[id], tree->itemType, 1);
         }
     }
-    if (tree->water > 0 && time(NULL) != oldTime && tree->inventory.quantity < 3)
+    if (tree->water <= 0)
+    {
+        tree->ageTime = min32(tree->ageTime + 2, time(NULL));
+    }
+    if (tree->water > 0 && time(NULL) != tree->oldTime && tree->inventory.quantity < 3)
     {
         tree->water--;
-        oldTimer = time(NULL);
+        tree->oldTime = time(NULL);
     }
     if (tree->level > 0 && tree->level < 3)
     {
@@ -315,13 +318,13 @@ void updateTree(Tree *tree, uint8_t id)
     }
 }
 
-bool createItem(float x, float z, uint8_t itemID, uint8_t quantity)
+bool createItem(float x, float z, float yaw, uint8_t itemID, uint8_t quantity)
 {
     for (int i = 0; i < MAX_ITEMS; i++)
     {
         if (!items[i].active)
         {
-            int id = createModel(x, getHeightAt(x, z), z, 0, rando(0, 512), 0, itemModels[itemID].model, itemModels[itemID].mat);
+            int id = createModel(x, getHeightAt(x, z), z, 0, RAD2ANG(yaw), 0, itemModels[itemID].model, itemModels[itemID].mat);
             if (id != -1)
             {
                 items[i].active = true;

@@ -3,7 +3,13 @@ Dear future me, I hope your fucking idea works
 
 Yours truly, past AzizBgBoss
 
-7/13/2026
+13/7/2026
+
+Dear past me, yes my idea will work!
+
+Yours truly, present AzizBgBoss
+
+19/7/2026
 */
 
 #include <NEMain.h>
@@ -25,6 +31,9 @@ Yours truly, past AzizBgBoss
 #include "apple_texture.h"
 #include "orange_bin.h"
 #include "orange_texture.h"
+#include "seed_pack_bin.h"
+#include "apple_seed_pack_texture.h"
+#include "orange_seed_pack_texture.h"
 
 #include "terrain_texture.h"
 
@@ -253,6 +262,8 @@ int main(int argc, char *argv[])
 
     itemModels[1] = (ModelRef){apple_bin, materials[3].mat};
     itemModels[2] = (ModelRef){orange_bin, materials[4].mat};
+    itemModels[3] = (ModelRef){seed_pack_bin, materials[8].mat};
+    itemModels[4] = (ModelRef){seed_pack_bin, materials[9].mat};
 
     Plant0Material = materials[5].mat;
     Plant1Material = materials[6].mat;
@@ -276,7 +287,7 @@ int main(int argc, char *argv[])
     for (int i = 0; i < MAX_TREES; i++)
         createTree(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, rando(ITEM_APPLE, ITEM_ORANGE + 1));
     for (int i = 0; i < MAX_ITEMS; i++)
-        createItem(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, rando(ITEM_APPLE, ITEM_ORANGE + 1), 1);
+        createItem(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, rand() / (float)RAND_MAX * 2.0f * M_PI, rando(ITEM_APPLE, ITEMS), 1);
     for (int i = 0; i < MAX_NPCS; i++)
     {
         spawnNpc(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE);
@@ -366,7 +377,7 @@ int main(int argc, char *argv[])
         }
         if (keys & KEY_B)
         {
-            moveForward(&player.x, &player.z, player.yaw, -player.speed, -1);
+            moveForward(&player.x, &player.z, player.yaw, player.speed * -0.5f, -1);
         }
 
         keys = keysDown();
@@ -427,7 +438,7 @@ int main(int argc, char *argv[])
             }
             else if (player.inventory.itemID != ITEM_NONE) // Drop item
             {
-                if (createItem(Scene.Model[player.inventory.modelID]->x / 4096.0f, Scene.Model[player.inventory.modelID]->z / 4096.0f, player.inventory.itemID, player.inventory.quantity))
+                if (createItem(Scene.Model[player.inventory.modelID]->x / 4096.0f, Scene.Model[player.inventory.modelID]->z / 4096.0f, player.yaw, player.inventory.itemID, player.inventory.quantity))
                     giveInventory(&player.inventory, player.inventory.itemID, -player.inventory.quantity);
                 else
                     alert("Maximum dropped items limit reached!");
@@ -467,7 +478,7 @@ int main(int argc, char *argv[])
 
         for (int i = 0; i < MAX_TREES; i++)
         {
-            if (trees[i].active && frames % MAX_TREES == i % MAX_TREES) // Update every second + split work across frames
+            if (trees[i].active && frames % MAX_TREES == i % MAX_TREES) // Split work across frames
             {
                 updateTree(&trees[i], i);
             }
@@ -543,13 +554,20 @@ int main(int argc, char *argv[])
             printSmartDirect("\n");
             printSmartDirect(itemNames[trees[selectionParam].itemType]);
             printSmartDirect(" tree");
-            if (trees[selectionParam].level < 3)
+            if (trees[selectionParam].water > 0)
             {
-                printSmartDirect("\nTime to grow: ");
-                printValDirect(trees[selectionParam].ageTime + (int)TREE_TRANSITION_TIME * (3 - trees[selectionParam].level) - time(NULL) + 1);
+                if (trees[selectionParam].level < 3)
+                {
+                    printSmartDirect("\nTime to grow: ");
+                    printValDirect(trees[selectionParam].ageTime + (int)TREE_TRANSITION_TIME * (3 - trees[selectionParam].level) - time(NULL) + 1);
+                    printSmartDirect(" seconds");
+                }
             }
-            printSmartDirect(" seconds");
-                printSmartDirect("\nWater: ");
+            else
+            {
+                printSmartDirect("\nTree needs water!");
+            }
+            printSmartDirect("\nWater: ");
             printValDirect(trees[selectionParam].water);
             printSmartDirect("L / ");
             printValDirect((trees[selectionParam].level + 1) * (int)TREE_TRANSITION_TIME / 2);

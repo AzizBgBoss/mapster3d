@@ -1,8 +1,8 @@
 #define VERSION "0.0a"
 
-#define MAX_TREES 16
+#define MAX_TREES 64
 #define MAX_NPCS 16
-#define MAX_ITEMS 32
+#define MAX_ITEMS 64
 
 #define NUM_MODELS (MAX_TREES * 4 + MAX_NPCS * 2 + MAX_ITEMS + 1 + 1)
 /*
@@ -25,7 +25,7 @@
 #define SIGHT_BACKUP 0.3f  // this pulls back your sight, useful when you don't see stuff when looking down
 #define GROWTH_FACTOR 0.5f
 
-#define TREE_TRANSITION_TIME 2.0f // seconds (should be 60.0f)
+#define TREE_TRANSITION_TIME 60.0f // seconds (should be 60.0f)
 
 #define TEX_SCALE 256
 #define TEX_WIDTH  128.0f
@@ -37,7 +37,8 @@
 #define F_SECOND 60
 #define F_MINUTE (F_SECOND * 60)
 
-#define RAD2ANG(rad) (((int)((rad) * (512.0f / (2.0f * M_PI))) % 512 + 512) % 512)
+#define RAD2ANG(rad) (((int)((rad) * (512.0f / (2.0f * M_PI))) % 512 + 512) % 512) // from ]-pi, pi] to [0, 512[
+#define ANG2RAD(ang) ((ang) * (2.0f * M_PI) / 512.0f) // from [0, 512[ to ]-pi, pi]
 
 enum // NPC targets
 {
@@ -52,6 +53,8 @@ enum // Item IDs
     ITEM_NONE,
     ITEM_APPLE,
     ITEM_ORANGE,
+    ITEM_APPLE_SEED_PACK,
+    ITEM_ORANGE_SEED_PACK,
 
     ITEMS,
 };

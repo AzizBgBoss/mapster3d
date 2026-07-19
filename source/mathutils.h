@@ -9,14 +9,21 @@ static float clamp(float val, float min, float max)
 	return val;
 }
 
-static float min(float val, float min)
+static uint32_t min32(uint32_t val, uint32_t min) // Returns the minimum between val and min (32-bit)
 {
 	if (val < min)
 		return val;
 	return min;
 }
 
-static float max(float val, float max)
+static float min(float val, float min) // Returns the minimum between val and min
+{
+	if (val < min)
+		return val;
+	return min;
+}
+
+static float max(float val, float max) // Returns the maximum between val and max
 {
 	if (val > max)
 		return val;

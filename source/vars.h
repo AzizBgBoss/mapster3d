@@ -3,7 +3,11 @@ const char *itemNames[ITEMS] =
         "Nothing",
         "Apple",
         "Orange",
+        "Apple seed packet",
+        "Orange seed packet",
 };
+
+// TODO: ADD BANANAS!!!
 
 typedef struct
 {
@@ -40,6 +44,7 @@ typedef struct
     float yaw;
     uint8_t itemType;
     uint32_t ageTime;
+    uint32_t oldTime;
     uint8_t level;
     Inventory inventory;
     int modelIDs[3];
@@ -131,7 +136,7 @@ typedef struct
 
 uint32_t frames = 0;
 
-NE_Material *TerrainMaterial, *TreeMaterial, *NpcMaterial, *AppleMaterial, *OrangeMaterial, *Plant0Material, *Plant1Material, *Plant2Material;
+NE_Material *TerrainMaterial, *TreeMaterial, *NpcMaterial, *Plant0Material, *Plant1Material, *Plant2Material;
 
 NE_Material *HighlightMaterial;
 
@@ -144,6 +149,8 @@ const MaterialRef materialsRef[] = {
     {plant_0_textureBitmap, plant_0_texturePal},
     {plant_1_textureBitmap, plant_1_texturePal},
     {plant_2_textureBitmap, plant_2_texturePal},
+    {apple_seed_pack_textureBitmap, apple_seed_pack_texturePal},
+    {orange_seed_pack_textureBitmap, orange_seed_pack_texturePal},
 };
 
 #define SIZE_MATERIALS_REF (sizeof(materialsRef) / sizeof(MaterialRef))
