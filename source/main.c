@@ -415,8 +415,10 @@ int main(int argc, char *argv[])
             }
             else if (player.inventory.itemID != ITEM_NONE) // Drop item
             {
-                createItem(Scene.Model[player.inventory.modelID]->x / 4096.0f, Scene.Model[player.inventory.modelID]->z / 4096.0f, player.inventory.itemID, player.inventory.quantity);
-                giveInventory(&player.inventory, player.inventory.itemID, -player.inventory.quantity);
+                if (createItem(Scene.Model[player.inventory.modelID]->x / 4096.0f, Scene.Model[player.inventory.modelID]->z / 4096.0f, player.inventory.itemID, player.inventory.quantity))
+                    giveInventory(&player.inventory, player.inventory.itemID, -player.inventory.quantity);
+                else
+                    alert("Maximum dropped items limit reached!");
             }
         }
 
@@ -436,7 +438,7 @@ int main(int argc, char *argv[])
 
                      0, 1, 0);
 
-        syncHeldItem(player.x, player.y, player.z, player.yaw, player.pitch, player.inventory.modelID);
+        syncHeldItem(player.x, player.y, player.z, player.yaw, player.pitch, player.inventory.modelID, 1.0f);
 
         // ========================= Update NPCs =====================================
 
@@ -445,7 +447,7 @@ int main(int argc, char *argv[])
             if (npcs[i].active)
             {
                 updateNpc(&npcs[i], i);
-                syncHeldItem(npcs[i].x, npcs[i].y, npcs[i].z, npcs[i].yaw, 0, npcs[i].inventory.modelID);
+                syncHeldItem(npcs[i].x, npcs[i].y, npcs[i].z, npcs[i].yaw, 0, npcs[i].inventory.modelID, 0.5f);
             }
         }
 
@@ -453,7 +455,7 @@ int main(int argc, char *argv[])
 
         for (int i = 0; i < MAX_TREES; i++)
         {
-            if (trees[i].active)
+            if (trees[i].active && frames % MAX_TREES == i % MAX_TREES) // Update every second + split work across frames
             {
                 updateTree(&trees[i], i);
             }
@@ -532,7 +534,11 @@ int main(int argc, char *argv[])
             printValDirect(MAX_TREES);
             printSmartDirect("\nTime to grow: ");
             printValDirect(trees[selectionParam].ageTime + (int)TREE_TRANSITION_TIME * (3 - trees[selectionParam].level) - time(NULL) + 1);
-            printSmartDirect(" seconds");
+            printSmartDirect(" seconds\nWater: ");
+            printValDirect(trees[selectionParam].water);
+            printSmartDirect("L / ");
+            printValDirect((trees[selectionParam].level + 1) * (int)TREE_TRANSITION_TIME / 2);
+            printSmartDirect("L");
         }
 
         if (selectionType != SELECTION_NPC && player.inventory.itemID != ITEM_NONE)

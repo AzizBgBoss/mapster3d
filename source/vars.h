@@ -37,9 +37,12 @@ typedef struct
     bool active;
     int modelID;
     float x, y, z;
+    float yaw;
     uint8_t itemType;
     uint32_t ageTime;
     uint8_t level;
+    Inventory inventory;
+    uint8_t water;
 } Tree;
 
 Tree trees[MAX_TREES] = {0};

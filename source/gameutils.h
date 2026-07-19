@@ -103,6 +103,25 @@ bool isSolid(float x, float z, int param) // if param == -1, we're checking the 
     return false;
 }
 
+int createModel(float x, float y, float z, float pitch, float yaw, float roll, const void *data, NE_Material *mat)
+{
+    for (int i = 0; i < NUM_MODELS; i++)
+    {
+        if (!Scene.activeModel[i])
+        {
+            Scene.activeModel[i] = true;
+            Scene.modelsRef[i] = data;
+            NE_ModelLoadStaticMesh(Scene.Model[i], data);
+            NE_ModelSetMaterial(Scene.Model[i], mat);
+            NE_ModelSetCoord(Scene.Model[i], x, y, z);
+            NE_ModelSetRot(Scene.Model[i], pitch, yaw, roll);
+            NE_ModelScale(Scene.Model[i], MODEL_SCALE, MODEL_SCALE, MODEL_SCALE);
+            return i;
+        }
+    }
+    return -1;
+}
+
 void moveForward(float *x, float *z, float yaw, float speed, int param)
 {
     float fx = x[0] + sinf(yaw) * speed * delta;
@@ -135,23 +154,53 @@ void moveForward(float *x, float *z, float yaw, float speed, int param)
         z[0] = -(TERRAIN_SIZE / 2.0f) * SCALE;
 }
 
-int createModel(float x, float y, float z, float pitch, float yaw, float roll, const void *data, NE_Material *mat)
+int giveInventoryPos(Inventory *inventory, uint8_t itemID, int quantity, float x, float y, float z)
 {
-    for (int i = 0; i < NUM_MODELS; i++)
+    int space = 0; // number of items successfully taken
+    if (inventory->itemID == ITEM_NONE)
     {
-        if (!Scene.activeModel[i])
+        inventory->itemID = itemID;
+        if (quantity > 3)
         {
-            Scene.activeModel[i] = true;
-            Scene.modelsRef[i] = data;
-            NE_ModelLoadStaticMesh(Scene.Model[i], data);
-            NE_ModelSetMaterial(Scene.Model[i], mat);
-            NE_ModelSetCoord(Scene.Model[i], x, y, z);
-            NE_ModelSetRot(Scene.Model[i], pitch, yaw, roll);
-            NE_ModelScale(Scene.Model[i], MODEL_SCALE, MODEL_SCALE, MODEL_SCALE);
-            return i;
+            inventory->quantity = 3;
+            space = 3;
         }
+        else
+        {
+            inventory->quantity = quantity;
+            space = quantity;
+        }
+        inventory->modelID = createModel(x, y, z, 0, 0, 0, itemModels[itemID].model, itemModels[itemID].mat); // it is mathematically impossible for this to return -1
     }
-    return -1;
+    else if (inventory->itemID == itemID)
+    {
+        int add = quantity;
+        if (inventory->quantity + add > 3)
+            add = 3 - inventory->quantity;
+        else if (inventory->quantity + add < 0)
+            add = -inventory->quantity;
+        inventory->quantity += add;
+        space = add;
+    }
+    else if (inventory->itemID != itemID)
+    {
+        space = 0;
+    }
+
+    if (inventory->quantity <= 0 && inventory->itemID != ITEM_NONE)
+    {
+        inventory->itemID = ITEM_NONE;
+        inventory->quantity = 0;
+        Scene.activeModel[inventory->modelID] = false;
+        inventory->modelID = -1;
+    }
+
+    return space;
+}
+
+int giveInventory(Inventory *inventory, uint8_t itemID, int quantity)
+{
+    return giveInventoryPos(inventory, itemID, quantity, 0, 0, 0);
 }
 
 bool createTree(float x, float z, uint8_t itemType)
@@ -160,7 +209,8 @@ bool createTree(float x, float z, uint8_t itemType)
     {
         if (!trees[i].active)
         {
-            int id = createModel(x, getHeightAt(x, z), z, 0, rando(0, 512), 0, plant_0_bin, Plant0Material);
+            float yaw = rand() / (float)RAND_MAX * 2.0f * M_PI;
+            int id = createModel(x, getHeightAt(x, z), z, 0, RAD2ANG(yaw), 0, plant_0_bin, Plant0Material);
             if (id != -1)
             {
                 trees[i].active = true;
@@ -168,15 +218,68 @@ bool createTree(float x, float z, uint8_t itemType)
                 trees[i].x = x;
                 trees[i].y = getHeightAt(x, z);
                 trees[i].z = z;
+                trees[i].yaw = yaw;
                 trees[i].itemType = itemType;
                 trees[i].ageTime = time(NULL);
                 trees[i].level = 0;
+                trees[i].inventory.itemID = ITEM_NONE;
+                trees[i].inventory.quantity = 0;
+                trees[i].water = 67;
                 return true;
             }
             return false;
         }
     }
     return false;
+}
+
+uint32_t oldTimer = 0;
+
+void updateTree(Tree *tree, uint8_t id)
+{
+    if (tree->ageTime + (int)TREE_TRANSITION_TIME < time(NULL) && tree->water > 0)
+    {
+        if (tree->level < 3)
+        {
+            tree->level++;
+            tree->ageTime = time(NULL);
+            switch (tree->level)
+            {
+            case 1:
+                Scene.activeModel[tree->modelID] = false;
+                tree->modelID = createModel(tree->x, tree->y, tree->z, 0, RAD2ANG(tree->yaw), 0, plant_1_bin, Plant1Material);
+                break;
+            case 2:
+                Scene.activeModel[tree->modelID] = false;
+                tree->modelID = createModel(tree->x, tree->y, tree->z, 0, RAD2ANG(tree->yaw), 0, plant_2_bin, Plant2Material);
+                break;
+            case 3:
+                Scene.activeModel[tree->modelID] = false;
+                tree->modelID = createModel(tree->x, tree->y, tree->z, 0, RAD2ANG(tree->yaw), 0, tree_bin, TreeMaterial);
+                break;
+            }
+        }
+        else
+        {
+            const float treeItemPos[3][3] =
+                {
+                    {0.1f, 0.1f, 0.1f},
+                    {0.2f, 0.2f, 0.2f},
+                    {0.3f, 0.3f, 0.3f},
+                };
+            giveInventoryPos(&tree->inventory, tree->itemType, 1, tree->x + treeItemPos[tree->inventory.quantity][0] * sinf(tree->yaw), tree->y + treeItemPos[tree->inventory.quantity][1], tree->z + treeItemPos[tree->inventory.quantity][2] * cosf(tree->yaw));
+        }
+    }
+    if (tree->water > 0 && time(NULL) != oldTime && tree->inventory.quantity < 3)
+    {
+        tree->water--;
+        oldTimer = time(NULL);
+    }
+    if (tree->level > 0 && tree->level < 3)
+    {
+        float diff = ((time(NULL) - tree->ageTime) / TREE_TRANSITION_TIME) * GROWTH_FACTOR;
+        NE_ModelScale(Scene.Model[tree->modelID], MODEL_SCALE * (1 + diff), MODEL_SCALE * (1 + diff), MODEL_SCALE * (1 + diff));
+    }
 }
 
 bool createItem(float x, float z, uint8_t itemID, uint8_t quantity)
@@ -282,56 +385,10 @@ void updateNpc(Npc *npc, uint8_t id)
     NE_ModelSetRot(Scene.Model[npc->modelID], 0, RAD2ANG(npc->yaw), 0);
 }
 
-int giveInventory(Inventory *inventory, uint8_t itemID, int quantity)
-{
-    int space = 0; // number of items successfully taken
-    if (inventory->itemID == ITEM_NONE)
-    {
-        inventory->itemID = itemID;
-        if (quantity > 3)
-        {
-            inventory->quantity = 3;
-            space = 3;
-        }
-        else
-        {
-            inventory->quantity = quantity;
-            space = quantity;
-        }
-        inventory->modelID = createModel(0, 0, 0, 0, 0, 0, itemModels[itemID].model, itemModels[itemID].mat); // it is mathematically impossible for this to return -1
-    }
-    else if (inventory->itemID == itemID)
-    {
-        int add = quantity;
-        if (inventory->quantity + add > 3)
-            add = 3 - inventory->quantity;
-        else if (inventory->quantity + add < 0)
-            add = -inventory->quantity;
-        inventory->quantity += add;
-        space = add;
-    }
-    else if (inventory->itemID != itemID)
-    {
-        space = 0;
-    }
-
-    if (inventory->quantity <= 0 && inventory->itemID != ITEM_NONE)
-    {
-        inventory->itemID = ITEM_NONE;
-        inventory->quantity = 0;
-        Scene.activeModel[inventory->modelID] = false;
-        inventory->modelID = -1;
-    }
-
-    return space;
-}
-
-void syncHeldItem(float x, float y, float z, float yaw, float pitch, int modelID)
+void syncHeldItem(float x, float y, float z, float yaw, float pitch, int modelID, float dist)
 {
     if (modelID == -1)
         return;
-
-    const float dist = 0.1f; // how far we hold the item in front of us
 
     float newX = x + sinf(yaw) * cosf(pitch) * dist;
     float newZ = z + cosf(yaw) * cosf(pitch) * dist; // multiply pitch so we feel the pitch :)
@@ -368,33 +425,4 @@ void alert(const char *message)
 {
     strcpy(alertText, message);
     alertTime = time(NULL) + 5;
-}
-
-void updateTree(Tree *tree, uint8_t id)
-{
-    while (tree->ageTime + (int)TREE_TRANSITION_TIME < time(NULL) && tree->level < 3)
-    {
-        tree->level++;
-        tree->ageTime += (int)TREE_TRANSITION_TIME;
-        switch (tree->level)
-        {
-        case 1:
-            Scene.activeModel[tree->modelID] = false;
-            tree->modelID = createModel(tree->x, tree->y, tree->z, 0, rando(0, 512), 0, plant_1_bin, Plant1Material);
-            break;
-        case 2:
-            Scene.activeModel[tree->modelID] = false;
-            tree->modelID = createModel(tree->x, tree->y, tree->z, 0, rando(0, 512), 0, plant_2_bin, Plant2Material);
-            break;
-        case 3:
-            Scene.activeModel[tree->modelID] = false;
-            tree->modelID = createModel(tree->x, tree->y, tree->z, 0, rando(0, 512), 0, tree_bin, TreeMaterial);
-            break;
-        }
-    }
-    if (tree->level > 0 && tree->level < 3)
-    {
-        float diff = ((time(NULL) - tree->ageTime) / TREE_TRANSITION_TIME) * GROWTH_FACTOR;
-        NE_ModelScale(Scene.Model[tree->modelID], MODEL_SCALE * (1 + diff), MODEL_SCALE * (1 + diff), MODEL_SCALE * (1 + diff));
-    }
 }

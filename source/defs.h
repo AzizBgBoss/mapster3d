@@ -4,7 +4,14 @@
 #define MAX_NPCS 16
 #define MAX_ITEMS 32
 
-#define NUM_MODELS (MAX_TREES + MAX_NPCS * 2 + MAX_ITEMS + 1 + 1) // * 2 since each NPC can hold and item; + 1 for the item we're holding; + 1 for the higlighted model
+#define NUM_MODELS (MAX_TREES * 3 + MAX_NPCS * 2 + MAX_ITEMS + 1 + 1)
+/*
+    MAX_TREES * 5: 1 tree, up to 3 fruits
+    MAX_NPCS * 2: 1 npc, up to 1 fruit
+    MAX_ITEMS: 1 item
+    1: player item
+    1: highlight model (the white outline on models is actually a model itself)
+*/
 
 #define SCREEN_WIDTH 256
 #define SCREEN_HEIGHT 192
@@ -18,7 +25,7 @@
 #define SIGHT_BACKUP 0.3f  // this pulls back your sight, useful when you don't see stuff when looking down
 #define GROWTH_FACTOR 0.5f
 
-#define TREE_TRANSITION_TIME 5.0f // seconds
+#define TREE_TRANSITION_TIME 2.0f // seconds (should be 60.0f)
 
 #define TEX_SCALE 256
 #define TEX_WIDTH  128.0f
