@@ -5,6 +5,7 @@ const char *itemNames[ITEMS] =
         "Orange",
         "Apple seed packet",
         "Orange seed packet",
+        "Water can",
 };
 
 // TODO: ADD BANANAS!!!
@@ -44,11 +45,10 @@ typedef struct
     float yaw;
     uint8_t itemType;
     uint32_t ageTime;
-    uint32_t oldTime;
     uint8_t level;
     Inventory inventory;
     int modelIDs[3];
-    uint8_t water;
+    float water;
 } Tree;
 
 Tree trees[MAX_TREES] = {0};
@@ -138,7 +138,7 @@ uint32_t frames = 0;
 
 NE_Material *TerrainMaterial, *TreeMaterial, *NpcMaterial, *Plant0Material, *Plant1Material, *Plant2Material;
 
-NE_Material *HighlightMaterial;
+NE_Material *HighlightMaterial, *PlacementMaterial;
 
 const MaterialRef materialsRef[] = {
     {terrain_textureBitmap, terrain_texturePal},
@@ -151,6 +151,7 @@ const MaterialRef materialsRef[] = {
     {plant_2_textureBitmap, plant_2_texturePal},
     {apple_seed_pack_textureBitmap, apple_seed_pack_texturePal},
     {orange_seed_pack_textureBitmap, orange_seed_pack_texturePal},
+    {watering_can_textureBitmap, watering_can_texturePal},
 };
 
 #define SIZE_MATERIALS_REF (sizeof(materialsRef) / sizeof(MaterialRef))
@@ -167,8 +168,10 @@ float delta;
 float terrainVertices[TERRAIN_SIZE][TERRAIN_SIZE][3] = {0};
 float terrainNormal[TERRAIN_SIZE - 1][TERRAIN_SIZE - 1][2][3] = {0};
 
-int highlightedModel = -1;
+int highlightedModel = -1; // The extra white model to make the highlight illusion, sorry but for the life of me i couldn't find a way to make a simple outline like many other games
 int highlightedModelID = -1;
+uint8_t *placementModelData = NULL; // The model that's going to represent where a model will be placed
+int placementModelID = -1;
 
 char alertText[64];
 uint32_t alertTime = 0;

@@ -1,16 +1,17 @@
 #define VERSION "0.0a"
 
-#define MAX_TREES 64
+#define MAX_TREES 128
 #define MAX_NPCS 16
 #define MAX_ITEMS 64
 
-#define NUM_MODELS (MAX_TREES * 4 + MAX_NPCS * 2 + MAX_ITEMS + 1 + 1)
+#define NUM_MODELS (MAX_TREES * 4 + MAX_NPCS * 2 + MAX_ITEMS + 1 + 1 + 1)
 /*
     MAX_TREES * 4: 1 tree, up to 3 fruits
     MAX_NPCS * 2: 1 npc, up to 1 fruit
     MAX_ITEMS: 1 item
     1: player item
     1: highlight model (the white outline on models is actually a model itself)
+    1: placement model
 */
 
 #define SCREEN_WIDTH 256
@@ -39,6 +40,7 @@
 
 #define RAD2ANG(rad) (((int)((rad) * (512.0f / (2.0f * M_PI))) % 512 + 512) % 512) // from ]-pi, pi] to [0, 512[
 #define ANG2RAD(ang) ((ang) * (2.0f * M_PI) / 512.0f) // from [0, 512[ to ]-pi, pi]
+#define F32TOF(f) ((float)(f) / 4096.0f)
 
 enum // NPC targets
 {
@@ -55,6 +57,7 @@ enum // Item IDs
     ITEM_ORANGE,
     ITEM_APPLE_SEED_PACK,
     ITEM_ORANGE_SEED_PACK,
+    ITEM_WATERING_CAN,
 
     ITEMS,
 };

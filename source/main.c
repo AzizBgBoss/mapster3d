@@ -34,6 +34,8 @@ Yours truly, present AzizBgBoss
 #include "seed_pack_bin.h"
 #include "apple_seed_pack_texture.h"
 #include "orange_seed_pack_texture.h"
+#include "watering_can_bin.h"
+#include "watering_can_texture.h"
 
 #include "terrain_texture.h"
 
@@ -167,6 +169,13 @@ void Draw3DScene(void *arg)
                 NE_LIGHT_ALL,
                 NE_CULL_FRONT,
                 NE_FOG_ENABLE);
+        else if (placementModelID != -1 && visible[i].model == Scene->Model[placementModelID])
+            NE_PolyFormat(
+                16,
+                0,
+                NE_LIGHT_ALL,
+                NE_CULL_NONE,
+                NE_FOG_ENABLE);
         else
             NE_PolyFormat(
                 31,
@@ -264,6 +273,7 @@ int main(int argc, char *argv[])
     itemModels[2] = (ModelRef){orange_bin, materials[4].mat};
     itemModels[3] = (ModelRef){seed_pack_bin, materials[8].mat};
     itemModels[4] = (ModelRef){seed_pack_bin, materials[9].mat};
+    itemModels[5] = (ModelRef){watering_can_bin, materials[10].mat};
 
     Plant0Material = materials[5].mat;
     Plant1Material = materials[6].mat;
@@ -277,6 +287,14 @@ int main(int argc, char *argv[])
                              RGB15(0, 0, 0),    // Emission
                              false, false);     // Vertex color, use shininess table
 
+    PlacementMaterial = NE_MaterialCreate();
+    NE_MaterialSetProperties(PlacementMaterial,
+                             RGB15(5, 5, 5),  // Diffuse
+                             RGB15(5, 5, 20), // Ambient
+                             RGB15(0, 0, 0),  // Specular
+                             RGB15(0, 0, 0),  // Emission
+                             false, false);   // Vertex color, use shininess table
+
     // Allocate space for everything
     for (int i = 0; i < NUM_MODELS; i++)
     {
@@ -284,14 +302,14 @@ int main(int argc, char *argv[])
         Scene.activeModel[i] = false;
     }
 
-    for (int i = 0; i < MAX_TREES; i++)
-        createTree(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, rando(ITEM_APPLE, ITEM_ORANGE + 1));
+    // for (int i = 0; i < MAX_TREES; i++)        createTree(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, rando(ITEM_APPLE, ITEM_ORANGE + 1));
     for (int i = 0; i < MAX_ITEMS; i++)
         createItem(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, rand() / (float)RAND_MAX * 2.0f * M_PI, rando(ITEM_APPLE, ITEMS), 1);
     for (int i = 0; i < MAX_NPCS; i++)
     {
         spawnNpc(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE);
     }
+
     /*
     int fpscount = 0;
     int oldsec = 0;
@@ -305,6 +323,12 @@ int main(int argc, char *argv[])
         delta = (timerElapsed(0) / (float)(BUS_CLOCK / 1024) - oldTime) / FPS_TIME;
         oldTime = timerElapsed(0) / (float)(BUS_CLOCK / 1024);
         NE_WaitForVBL(0);
+
+        if (placementModelID != -1)
+        {
+            Scene.activeModel[placementModelID] = false;
+            placementModelID = -1; // Always keep it off unless syncPlacement() is called
+        }
 
         // ========================= Update selection ================================
 
@@ -323,6 +347,18 @@ int main(int argc, char *argv[])
         }
 
         if (selectedModel == -1)
+            for (int i = 0; i < MAX_TREES; i++)
+            {
+                if (trees[i].active && isInPlayerRange(trees[i].x, trees[i].z, 0.2f))
+                {
+                    selectedModel = trees[i].modelID;
+                    selectionType = SELECTION_TREE;
+                    selectionParam = i;
+                    break;
+                }
+            }
+
+        if (selectedModel == -1)
             for (int i = 0; i < MAX_NPCS; i++)
             {
                 if (npcs[i].active && isInPlayerRange(npcs[i].x, npcs[i].z, 0.2f) &&
@@ -330,18 +366,6 @@ int main(int argc, char *argv[])
                 {
                     selectedModel = npcs[i].modelID;
                     selectionType = SELECTION_NPC;
-                    selectionParam = i;
-                    break;
-                }
-            }
-
-        if (selectedModel == -1)
-            for (int i = 0; i < MAX_TREES; i++)
-            {
-                if (trees[i].active && isInPlayerRange(trees[i].x, trees[i].z, 0.2f))
-                {
-                    selectedModel = trees[i].modelID;
-                    selectionType = SELECTION_TREE;
                     selectionParam = i;
                     break;
                 }
@@ -380,6 +404,20 @@ int main(int argc, char *argv[])
             moveForward(&player.x, &player.z, player.yaw, player.speed * -0.5f, -1);
         }
 
+        if (keys & KEY_R)
+        {
+            if (selectionType == SELECTION_TREE) // Water tree
+            {
+                if (player.inventory.itemID == ITEM_WATERING_CAN)
+                {
+                    if (trees[selectionParam].water < (trees[selectionParam].level + 1) * TREE_TRANSITION_TIME / 4)
+                    {
+                        trees[selectionParam].water += 0.02f * delta;
+                    }
+                }
+            }
+        }
+
         keys = keysDown();
 
         if (keys & KEY_L)
@@ -398,27 +436,46 @@ int main(int argc, char *argv[])
             }
             else if (selectionType == SELECTION_NPC) // Take from NPC
             {
-                if (player.inventory.itemID == ITEM_NONE || player.inventory.itemID == npcs[selectionParam].inventory.itemID)
+                if (npcs[selectionParam].inventory.itemID != ITEM_NONE)
                 {
-                    if (player.inventory.quantity < 3)
-                        giveInventory(&npcs[selectionParam].inventory, npcs[selectionParam].inventory.itemID, -giveInventory(&player.inventory, npcs[selectionParam].inventory.itemID, npcs[selectionParam].inventory.quantity));
+                    if (npcs[selectionParam].inventory.quantity > 0 && (player.inventory.itemID == ITEM_NONE || player.inventory.itemID == npcs[selectionParam].inventory.itemID))
+                    {
+                        if (player.inventory.quantity < 3)
+                            giveInventory(&npcs[selectionParam].inventory, npcs[selectionParam].inventory.itemID, -giveInventory(&player.inventory, npcs[selectionParam].inventory.itemID, npcs[selectionParam].inventory.quantity));
+                        else
+                            alert("You can't hold more items!");
+                    }
                     else
-                        alert("You can't hold more items!");
+                        alert("You can't take a different item from the one you're holding!");
                 }
-                else
-                    alert("You can't take a different item from the one you're holding!");
             }
             else if (selectionType == SELECTION_TREE) // Take from tree
             {
-                if (player.inventory.itemID == ITEM_NONE || player.inventory.itemID == trees[selectionParam].inventory.itemID)
+                if (trees[selectionParam].inventory.quantity > 0)
                 {
-                    if (player.inventory.quantity < 3)
-                        giveInventoryTree(&trees[selectionParam], trees[selectionParam].inventory.itemID, -giveInventory(&player.inventory, trees[selectionParam].inventory.itemID, trees[selectionParam].inventory.quantity));
+                    if (player.inventory.itemID == ITEM_NONE || player.inventory.itemID == trees[selectionParam].inventory.itemID)
+                    {
+                        if (player.inventory.quantity < 3)
+                            giveInventoryTree(&trees[selectionParam], trees[selectionParam].inventory.itemID, -giveInventory(&player.inventory, trees[selectionParam].inventory.itemID, trees[selectionParam].inventory.quantity));
+                        else
+                            alert("You can't hold more items!");
+                    }
                     else
-                        alert("You can't hold more items!");
+                        alert("You can't take a different item from the one you're holding!");
+                }
+            }
+            else if (player.inventory.itemID >= ITEM_APPLE_SEED_PACK && player.inventory.itemID <= ITEM_ORANGE_SEED_PACK) // Plant
+            {
+                syncPlacement(tree_bin);
+                if (isLegal(F32TOF(Scene.Model[placementModelID]->x), F32TOF(Scene.Model[placementModelID]->z)))
+                {
+                    if (createTree(F32TOF(Scene.Model[placementModelID]->x), F32TOF(Scene.Model[placementModelID]->z), player.inventory.itemID - ITEM_APPLE_SEED_PACK + ITEM_APPLE) != -1)
+                        giveInventory(&player.inventory, player.inventory.itemID, -1);
+                    else
+                        alert("Maximum planted trees reached!");
                 }
                 else
-                    alert("You can't take a different item from the one you're holding!");
+                    alert("You can't place here!");
             }
         }
 
@@ -435,6 +492,9 @@ int main(int argc, char *argv[])
                 }
                 else
                     alert("You can't give the NPC a different item from the one they're holding!");
+            }
+            else if (selectionType == SELECTION_TREE) // Give to tree
+            {
             }
             else if (player.inventory.itemID != ITEM_NONE) // Drop item
             {
@@ -478,7 +538,7 @@ int main(int argc, char *argv[])
 
         for (int i = 0; i < MAX_TREES; i++)
         {
-            if (trees[i].active && frames % MAX_TREES == i % MAX_TREES) // Split work across frames
+            if (trees[i].active) // Split work across frames
             {
                 updateTree(&trees[i], i);
             }
@@ -519,6 +579,8 @@ int main(int argc, char *argv[])
             {
                 printSmartDirect("s");
             }
+            if (player.inventory.itemID != ITEM_NONE)
+                goto dropMsg;
         }
         else if (selectionType == SELECTION_NPC)
         {
@@ -570,7 +632,7 @@ int main(int argc, char *argv[])
             printSmartDirect("\nWater: ");
             printValDirect(trees[selectionParam].water);
             printSmartDirect("L / ");
-            printValDirect((trees[selectionParam].level + 1) * (int)TREE_TRANSITION_TIME / 2);
+            printValDirect((trees[selectionParam].level + 1) * (int)TREE_TRANSITION_TIME / 4);
             printSmartDirect("L");
             if (trees[selectionParam].inventory.quantity > 0)
             {
@@ -584,10 +646,21 @@ int main(int argc, char *argv[])
                 }
                 printSmartDirect(" from the tree");
             }
+            if (trees[selectionParam].water < (trees[selectionParam].level + 1) * (int)TREE_TRANSITION_TIME / 4 && player.inventory.itemID == ITEM_WATERING_CAN)
+            {
+                printSmartDirect("\nHold R to water the tree");
+            }
         }
-
-        if (selectionType != SELECTION_NPC && player.inventory.itemID != ITEM_NONE)
+        else if (player.inventory.itemID != ITEM_NONE)
         {
+            if (player.inventory.itemID >= ITEM_APPLE_SEED_PACK && player.inventory.itemID <= ITEM_ORANGE_SEED_PACK)
+            {
+                printSmartDirect("\nPress L to plant ");
+                printSmartDirect(itemNames[player.inventory.itemID - ITEM_APPLE_SEED_PACK + ITEM_APPLE]);
+                printSmartDirect(" seed");
+                syncPlacement(tree_bin);
+            }
+        dropMsg:
             printSmartDirect("\nPress R to drop ");
             printValDirect(player.inventory.quantity);
             printSmartDirect(" ");

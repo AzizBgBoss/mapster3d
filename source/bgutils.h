@@ -66,6 +66,13 @@ void printVal(int x, int y, int value)
     print(x, y, buffer);
 }
 
+void printFValDirect(float value)
+{
+    char buffer[32];
+    sprintf(buffer, "%.2f", value);
+    printDirect(buffer);
+}
+
 void printValDirect(int value)
 {
     char buffer[32];

@@ -86,7 +86,7 @@ bool isSolid(float x, float z, int param) // if param == -1, we're checking the 
         return true;
     for (int i = 0; i < MAX_TREES; i++)
     {
-        if (trees[i].active && isInRange(x, z, trees[i].x, trees[i].z, dist * trees[i].level / 4.0f))
+        if (trees[i].active && isInRange(x, z, trees[i].x, trees[i].z, dist))
             return true;
     }
     /*
@@ -101,6 +101,19 @@ bool isSolid(float x, float z, int param) // if param == -1, we're checking the 
     if (z > (TERRAIN_SIZE / 2.0f - 1.0f) * SCALE || z < -(TERRAIN_SIZE / 2.0f) * SCALE)
         return true;
     return false;
+}
+
+bool isLegal(float x, float z)
+{
+    const float dist = 0.15f;
+    if (isSolid(x, z, -2))
+        return false;
+    for (int i = 0; i < MAX_NPCS; i++)
+    {
+        if (npcs[i].active && isInRange(x, z, npcs[i].x, npcs[i].z, dist))
+            return false;
+    }
+    return true;
 }
 
 int createModel(float x, float y, float z, float pitch, float yaw, float roll, const void *data, NE_Material *mat)
@@ -247,7 +260,7 @@ bool createTree(float x, float z, uint8_t itemType)
         if (!trees[i].active)
         {
             float yaw = rand() / (float)RAND_MAX * 2.0f * M_PI;
-            int id = createModel(x, getHeightAt(x, z), z, 0, RAD2ANG(yaw), 0, plant_0_bin, Plant0Material);
+            int id = createModel(x, getHeightAt(x, z), z, 0, RAD2ANG(player.yaw), 0, plant_0_bin, Plant0Material);
             if (id != -1)
             {
                 trees[i].active = true;
@@ -261,7 +274,7 @@ bool createTree(float x, float z, uint8_t itemType)
                 trees[i].level = 0;
                 trees[i].inventory.itemID = ITEM_NONE;
                 trees[i].inventory.quantity = 0;
-                trees[i].water = 60;
+                trees[i].water = 0;
                 for (int j = 0; j < 3; j++)
                     trees[i].modelIDs[j] = -1;
                 return true;
@@ -304,12 +317,12 @@ void updateTree(Tree *tree, uint8_t id)
     }
     if (tree->water <= 0)
     {
+        tree->water = 0;
         tree->ageTime = min32(tree->ageTime + 2, time(NULL));
     }
-    if (tree->water > 0 && time(NULL) != tree->oldTime && tree->inventory.quantity < 3)
+    if (tree->water > 0 && tree->inventory.quantity < 3)
     {
-        tree->water--;
-        tree->oldTime = time(NULL);
+        tree->water -= 0.01f;
     }
     if (tree->level > 0 && tree->level < 3)
     {
@@ -426,14 +439,15 @@ void syncHeldItem(float x, float y, float z, float yaw, float pitch, int modelID
     if (modelID == -1)
         return;
 
-    float newX = x + sinf(yaw) * cosf(pitch) * dist;
-    float newZ = z + cosf(yaw) * cosf(pitch) * dist; // multiply pitch so we feel the pitch :)
+    float offset = -0.5f;
+    float newX = x + sinf(yaw + offset) * cosf(pitch) * dist;
+    float newZ = z + cosf(yaw + offset) * cosf(pitch) * dist; // multiply pitch so we feel the pitch :)
     float newY = y + 0.04f + sinf(pitch * 0.8f) * dist;
 
     newY = max(newY, getHeightAt(newX, newZ));
 
     NE_ModelSetCoord(Scene.Model[modelID], newX, newY, newZ);
-    NE_ModelSetRot(Scene.Model[modelID], 0, RAD2ANG(yaw), 0);
+    NE_ModelSetRot(Scene.Model[modelID], 0, RAD2ANG(yaw + offset), 0);
 }
 
 void setHighlightedModel(int id)
@@ -461,4 +475,23 @@ void alert(const char *message)
 {
     strcpy(alertText, message);
     alertTime = time(NULL) + 5;
+}
+
+void syncPlacement(uint8_t *modelData)
+{
+    if (placementModelID != -1 && placementModelData == modelData)
+        return;
+    if (placementModelID == -1)
+    {
+        placementModelID = createModel(0, 0, 0, 0, 0, 0, modelData, PlacementMaterial);
+        placementModelData = modelData;
+    }
+    const float dist = 0.151f;
+
+    float px = player.x + sinf(player.yaw) * dist;
+    float pz = player.z + cosf(player.yaw) * dist;
+    float py = getHeightAt(px, pz);
+
+    NE_ModelSetCoord(Scene.Model[placementModelID], px, py, pz);
+    NE_ModelSetRot(Scene.Model[placementModelID], 0, RAD2ANG(player.yaw), 0);
 }
