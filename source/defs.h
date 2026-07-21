@@ -28,7 +28,7 @@
 
 #define TREE_TRANSITION_TIME 60.0f // seconds (should be 60.0f)
 
-#define TEX_SCALE 256
+#define TEX_SCALE 128
 #define TEX_WIDTH  128.0f
 #define TEX_HEIGHT 128.0f
 

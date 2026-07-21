@@ -174,7 +174,7 @@ void Draw3DScene(void *arg)
                 16,
                 0,
                 NE_LIGHT_ALL,
-                NE_CULL_NONE,
+                NE_CULL_BACK,
                 NE_FOG_ENABLE);
         else
             NE_PolyFormat(
@@ -571,7 +571,7 @@ int main(int argc, char *argv[])
 
         if (selectionType == SELECTION_ITEM)
         {
-            printSmartDirect("\nPress L to pickup ");
+            printSmartDirect("\nL: pickup ");
             printValDirect(items[selectionParam].inventory.quantity);
             printSmartDirect(" ");
             printSmartDirect(itemNames[items[selectionParam].inventory.itemID]);
@@ -586,7 +586,7 @@ int main(int argc, char *argv[])
         {
             if (npcs[selectionParam].inventory.itemID == ITEM_NONE || npcs[selectionParam].inventory.itemID == player.inventory.itemID)
             {
-                printSmartDirect("\nPress R to give ");
+                printSmartDirect("\nR: give ");
                 printValDirect(player.inventory.quantity);
                 printSmartDirect(" ");
                 printSmartDirect(itemNames[player.inventory.itemID]);
@@ -599,7 +599,7 @@ int main(int argc, char *argv[])
             }
             if (player.inventory.itemID == ITEM_NONE || player.inventory.itemID == npcs[selectionParam].inventory.itemID)
             {
-                printSmartDirect("\nPress L to take ");
+                printSmartDirect("\nL: take ");
                 printValDirect(npcs[selectionParam].inventory.quantity);
                 printSmartDirect(" ");
                 printSmartDirect(itemNames[npcs[selectionParam].inventory.itemID]);
@@ -636,7 +636,7 @@ int main(int argc, char *argv[])
             printSmartDirect("L");
             if (trees[selectionParam].inventory.quantity > 0)
             {
-                printSmartDirect("\n\nPress L to harvest ");
+                printSmartDirect("\n\nL: harvest ");
                 printValDirect(trees[selectionParam].inventory.quantity);
                 printSmartDirect(" ");
                 printSmartDirect(itemNames[trees[selectionParam].inventory.itemID]);
@@ -648,20 +648,20 @@ int main(int argc, char *argv[])
             }
             if (trees[selectionParam].water < (trees[selectionParam].level + 1) * (int)TREE_TRANSITION_TIME / 4 && player.inventory.itemID == ITEM_WATERING_CAN)
             {
-                printSmartDirect("\nHold R to water the tree");
+                printSmartDirect("\nHold R: water the tree");
             }
         }
         else if (player.inventory.itemID != ITEM_NONE)
         {
             if (player.inventory.itemID >= ITEM_APPLE_SEED_PACK && player.inventory.itemID <= ITEM_ORANGE_SEED_PACK)
             {
-                printSmartDirect("\nPress L to plant ");
+                printSmartDirect("\nL: plant ");
                 printSmartDirect(itemNames[player.inventory.itemID - ITEM_APPLE_SEED_PACK + ITEM_APPLE]);
                 printSmartDirect(" seed");
                 syncPlacement(tree_bin);
             }
         dropMsg:
-            printSmartDirect("\nPress R to drop ");
+            printSmartDirect("\nR: drop ");
             printValDirect(player.inventory.quantity);
             printSmartDirect(" ");
             printSmartDirect(itemNames[player.inventory.itemID]);
