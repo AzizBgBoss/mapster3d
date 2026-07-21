@@ -46,6 +46,7 @@ Yours truly, present AzizBgBoss
 #include "mathutils.h"
 #include "gameutils.h"
 #include "bgutils.h"
+#include "menuutils.h"
 
 void Draw3DScene(void *arg)
 {
@@ -186,8 +187,7 @@ void Draw3DScene(void *arg)
         NE_ModelDraw(visible[i].model);
     }
 
-    printf("\nPolys: %d %d%%       \nVertices: %d %d%%       \nCPU: %d%%       ",
-           NE_GetPolygonCount(), NE_GetPolygonCount() / 2048 * 100, NE_GetVertexCount(), NE_GetVertexCount() / 2048 * 100, NE_GetCPUPercent());
+    // thePrint("\nPolys: %d %d%%       \nVertices: %d %d%%       \nCPU: %d%%       ", NE_GetPolygonCount(), NE_GetPolygonCount() / 2048 * 100, NE_GetVertexCount(), NE_GetVertexCount() / 2048 * 100, NE_GetCPUPercent());
 }
 
 int main(int argc, char *argv[])
@@ -302,13 +302,19 @@ int main(int argc, char *argv[])
         Scene.activeModel[i] = false;
     }
 
-    // for (int i = 0; i < MAX_TREES; i++)        createTree(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, rando(ITEM_APPLE, ITEM_ORANGE + 1));
-    for (int i = 0; i < MAX_ITEMS; i++)
-        createItem(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, rand() / (float)RAND_MAX * 2.0f * M_PI, rando(ITEM_APPLE, ITEMS), 1);
-    for (int i = 0; i < MAX_NPCS; i++)
+    // Set up menus
+    for (int i = 0; i < sizeof(buyItems) / sizeof(ShopItem); i++)
     {
-        spawnNpc(frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE, frando(-TERRAIN_SIZE / 2.0f, TERRAIN_SIZE / 2.0f - 1.0f) * SCALE);
+        sprintf(menus[3].items[i], "%s - %d$", itemNames[buyItems[i].itemID], buyItems[i].price);
+        menus[3].itemCount++;
     }
+    for (int i = 0; i < sizeof(sellItems) / sizeof(ShopItem); i++)
+    {
+        sprintf(menus[4].items[i], "%s - %d$", itemNames[sellItems[i].itemID], sellItems[i].price);
+        menus[4].itemCount++;
+    }
+
+    createItem(0, 0, 0, ITEM_WATERING_CAN, 1);
 
     /*
     int fpscount = 0;
@@ -317,6 +323,8 @@ int main(int argc, char *argv[])
     */
     timerStart(0, ClockDivider_1024, 0, NULL); // more precise than time()
     oldTime = timerElapsed(0) / (float)(BUS_CLOCK / 1024);
+
+    alert("Welcome! Don't forget to check the help in the pause menu if you need any!");
 
     while (1)
     {
@@ -378,131 +386,154 @@ int main(int argc, char *argv[])
 
         // ========================= Controls ========================================
 
-        scanKeys();
-        uint32_t keys = keysHeld();
-
-        if (keys & KEY_LEFT)
-            player.yaw += 0.05f * delta;
-        else if (keys & KEY_RIGHT)
-            player.yaw -= 0.05f * delta;
-        if (keys & KEY_UP)
-            player.pitch += 0.05f * delta;
-        else if (keys & KEY_DOWN)
-            player.pitch -= 0.05f * delta;
-
-        if (player.pitch > 1.5f)
-            player.pitch = 1.5f;
-        else if (player.pitch < -1.5f)
-            player.pitch = -1.5f;
-
-        if (keys & KEY_A)
+        if (activeMenu == -1)
         {
-            moveForward(&player.x, &player.z, player.yaw, player.speed, -1);
-        }
-        if (keys & KEY_B)
-        {
-            moveForward(&player.x, &player.z, player.yaw, player.speed * -0.5f, -1);
-        }
+            scanKeys();
+            uint32_t keys = keysHeld();
 
-        if (keys & KEY_R)
-        {
-            if (selectionType == SELECTION_TREE) // Water tree
+            if (keys & KEY_LEFT)
+                player.yaw += 0.05f * delta;
+            else if (keys & KEY_RIGHT)
+                player.yaw -= 0.05f * delta;
+            if (keys & KEY_UP)
+                player.pitch += 0.05f * delta;
+            else if (keys & KEY_DOWN)
+                player.pitch -= 0.05f * delta;
+
+            if (player.pitch > 1.5f)
+                player.pitch = 1.5f;
+            else if (player.pitch < -1.5f)
+                player.pitch = -1.5f;
+
+            if (keys & KEY_A)
             {
-                if (player.inventory.itemID == ITEM_WATERING_CAN)
+                moveForward(&player.x, &player.z, player.yaw, player.speed, -1);
+            }
+            if (keys & KEY_B)
+            {
+                moveForward(&player.x, &player.z, player.yaw, player.speed * -0.5f, -1);
+            }
+
+            if (keys & KEY_R)
+            {
+                if (selectionType == SELECTION_TREE) // Water tree
                 {
-                    if (trees[selectionParam].water < (trees[selectionParam].level + 1) * TREE_TRANSITION_TIME / 4)
+                    if (player.inventory.itemID == ITEM_WATERING_CAN)
                     {
-                        trees[selectionParam].water += 0.02f * delta;
+                        if (trees[selectionParam].water < (trees[selectionParam].level + 1) * TREE_TRANSITION_TIME / 4)
+                        {
+                            trees[selectionParam].water += 0.02f * delta;
+                        }
                     }
                 }
             }
-        }
 
-        keys = keysDown();
+            keys = keysDown();
 
-        if (keys & KEY_L)
-        {
-            if (selectionType == SELECTION_ITEM) // Pickup item
+            if (keys & KEY_X)
+                activeMenu = 0;
+
+            if (keys & KEY_L)
             {
-                if (player.inventory.itemID == ITEM_NONE || items[selectionParam].inventory.itemID == player.inventory.itemID)
+                if (selectionType == SELECTION_ITEM) // Pickup item
                 {
-                    if (player.inventory.quantity < 3)
-                        addItemQuantity(selectionParam, -giveInventory(&player.inventory, items[selectionParam].inventory.itemID, items[selectionParam].inventory.quantity));
-                    else
-                        alert("You can't hold more items!");
-                }
-                else
-                    alert("You can't pick up a different item from the one you're holding!");
-            }
-            else if (selectionType == SELECTION_NPC) // Take from NPC
-            {
-                if (npcs[selectionParam].inventory.itemID != ITEM_NONE)
-                {
-                    if (npcs[selectionParam].inventory.quantity > 0 && (player.inventory.itemID == ITEM_NONE || player.inventory.itemID == npcs[selectionParam].inventory.itemID))
+                    if (player.inventory.itemID == ITEM_NONE || items[selectionParam].inventory.itemID == player.inventory.itemID)
                     {
                         if (player.inventory.quantity < 3)
-                            giveInventory(&npcs[selectionParam].inventory, npcs[selectionParam].inventory.itemID, -giveInventory(&player.inventory, npcs[selectionParam].inventory.itemID, npcs[selectionParam].inventory.quantity));
+                            addItemQuantity(selectionParam, -giveInventory(&player.inventory, items[selectionParam].inventory.itemID, items[selectionParam].inventory.quantity));
                         else
                             alert("You can't hold more items!");
                     }
                     else
-                        alert("You can't take a different item from the one you're holding!");
+                        alert("You can't pick up a different item from the one you're holding!");
                 }
-            }
-            else if (selectionType == SELECTION_TREE) // Take from tree
-            {
-                if (trees[selectionParam].inventory.quantity > 0)
+                else if (selectionType == SELECTION_NPC) // Take from NPC
                 {
-                    if (player.inventory.itemID == ITEM_NONE || player.inventory.itemID == trees[selectionParam].inventory.itemID)
+                    if (npcs[selectionParam].inventory.itemID != ITEM_NONE)
                     {
-                        if (player.inventory.quantity < 3)
-                            giveInventoryTree(&trees[selectionParam], trees[selectionParam].inventory.itemID, -giveInventory(&player.inventory, trees[selectionParam].inventory.itemID, trees[selectionParam].inventory.quantity));
+                        if (npcs[selectionParam].inventory.quantity > 0 && (player.inventory.itemID == ITEM_NONE || player.inventory.itemID == npcs[selectionParam].inventory.itemID))
+                        {
+                            if (player.inventory.quantity < 3)
+                                giveInventory(&npcs[selectionParam].inventory, npcs[selectionParam].inventory.itemID, -giveInventory(&player.inventory, npcs[selectionParam].inventory.itemID, npcs[selectionParam].inventory.quantity));
+                            else
+                                alert("You can't hold more items!");
+                        }
                         else
-                            alert("You can't hold more items!");
+                            alert("You can't take a different item from the one you're holding!");
+                    }
+                }
+                else if (selectionType == SELECTION_TREE) // Take from tree
+                {
+                    if (trees[selectionParam].inventory.quantity > 0)
+                    {
+                        if (player.inventory.itemID == ITEM_NONE || player.inventory.itemID == trees[selectionParam].inventory.itemID)
+                        {
+                            if (player.inventory.quantity < 3)
+                                giveInventoryTree(&trees[selectionParam], trees[selectionParam].inventory.itemID, -giveInventory(&player.inventory, trees[selectionParam].inventory.itemID, trees[selectionParam].inventory.quantity));
+                            else
+                                alert("You can't hold more items!");
+                        }
+                        else
+                            alert("You can't take a different item from the one you're holding!");
+                    }
+                }
+                else if (player.inventory.itemID >= ITEM_APPLE_SEED_PACK && player.inventory.itemID <= ITEM_ORANGE_SEED_PACK) // Plant
+                {
+                    syncPlacement(tree_bin);
+                    if (isLegal(F32TOF(Scene.Model[placementModelID]->x), F32TOF(Scene.Model[placementModelID]->z)))
+                    {
+                        if (createTree(F32TOF(Scene.Model[placementModelID]->x), F32TOF(Scene.Model[placementModelID]->z), player.inventory.itemID - ITEM_APPLE_SEED_PACK + ITEM_APPLE) != -1)
+                            giveInventory(&player.inventory, player.inventory.itemID, -1);
+                        else
+                            alert("Maximum planted trees reached (%d)!", MAX_TREES);
                     }
                     else
-                        alert("You can't take a different item from the one you're holding!");
+                        alert("You can't place here!");
                 }
             }
-            else if (player.inventory.itemID >= ITEM_APPLE_SEED_PACK && player.inventory.itemID <= ITEM_ORANGE_SEED_PACK) // Plant
+
+            if (keys & KEY_R)
             {
-                syncPlacement(tree_bin);
-                if (isLegal(F32TOF(Scene.Model[placementModelID]->x), F32TOF(Scene.Model[placementModelID]->z)))
+                if (selectionType == SELECTION_NPC) // Give to NPC
                 {
-                    if (createTree(F32TOF(Scene.Model[placementModelID]->x), F32TOF(Scene.Model[placementModelID]->z), player.inventory.itemID - ITEM_APPLE_SEED_PACK + ITEM_APPLE) != -1)
-                        giveInventory(&player.inventory, player.inventory.itemID, -1);
+                    if (npcs[selectionParam].inventory.itemID == ITEM_NONE || npcs[selectionParam].inventory.itemID == player.inventory.itemID)
+                    {
+                        if (npcs[selectionParam].inventory.quantity < 3)
+                            giveInventory(&player.inventory, player.inventory.itemID, -giveInventory(&npcs[selectionParam].inventory, player.inventory.itemID, player.inventory.quantity));
+                        else
+                            alert("The NPC can't hold more items!");
+                    }
                     else
-                        alert("Maximum planted trees reached!");
+                        alert("You can't give the NPC a different item from the one they're holding!");
                 }
-                else
-                    alert("You can't place here!");
+                else if (selectionType == SELECTION_TREE) // Give to tree
+                {
+                }
+                else if (player.inventory.itemID != ITEM_NONE) // Drop item
+                {
+                    if (createItem(Scene.Model[player.inventory.modelID]->x / 4096.0f, Scene.Model[player.inventory.modelID]->z / 4096.0f, player.yaw, player.inventory.itemID, player.inventory.quantity) != -1)
+                        giveInventory(&player.inventory, player.inventory.itemID, -player.inventory.quantity);
+                    else
+                        alert("Maximum dropped items limit reached (%d)!", MAX_ITEMS);
+                }
             }
         }
-
-        if (keys & KEY_R)
+        else
         {
-            if (selectionType == SELECTION_NPC) // Give to NPC
-            {
-                if (npcs[selectionParam].inventory.itemID == ITEM_NONE || npcs[selectionParam].inventory.itemID == player.inventory.itemID)
-                {
-                    if (npcs[selectionParam].inventory.quantity < 3)
-                        giveInventory(&player.inventory, player.inventory.itemID, -giveInventory(&npcs[selectionParam].inventory, player.inventory.itemID, player.inventory.quantity));
-                    else
-                        alert("The NPC can't hold more items!");
-                }
-                else
-                    alert("You can't give the NPC a different item from the one they're holding!");
-            }
-            else if (selectionType == SELECTION_TREE) // Give to tree
-            {
-            }
-            else if (player.inventory.itemID != ITEM_NONE) // Drop item
-            {
-                if (createItem(Scene.Model[player.inventory.modelID]->x / 4096.0f, Scene.Model[player.inventory.modelID]->z / 4096.0f, player.yaw, player.inventory.itemID, player.inventory.quantity))
-                    giveInventory(&player.inventory, player.inventory.itemID, -player.inventory.quantity);
-                else
-                    alert("Maximum dropped items limit reached!");
-            }
+            scanKeys();
+            uint32_t keys = keysDown();
+
+            if (keys & KEY_UP)
+                menus[activeMenu].choice = (menus[activeMenu].choice + menus[activeMenu].itemCount - 1) % menus[activeMenu].itemCount;
+
+            if (keys & KEY_DOWN)
+                menus[activeMenu].choice = (menus[activeMenu].choice + 1) % menus[activeMenu].itemCount;
+
+            if (keys & KEY_A)
+                menus[activeMenu].function(menus[activeMenu].choice);
+
+            if (keys & KEY_B)
+                activeMenu = -1;
         }
 
         // ========================= Update Player ===================================
@@ -555,129 +586,117 @@ int main(int argc, char *argv[])
         // ========================= Update Bottom Screen UI =========================
 
         clearPrint();
-        printSmart(0, 0, "Holding ");
-        if (player.inventory.quantity > 0 && player.inventory.itemID != ITEM_NONE)
+        if (activeMenu == -1)
         {
-            printValDirect(player.inventory.quantity);
-            printSmartDirect(" ");
-        }
-        printSmartDirect(itemNames[player.inventory.itemID]);
-        if (player.inventory.quantity > 1 && player.inventory.itemID != ITEM_NONE)
-        {
-            printSmartDirect("s");
-        }
-
-        printSmartDirect("\n");
-
-        if (selectionType == SELECTION_ITEM)
-        {
-            printSmartDirect("\nL: pickup ");
-            printValDirect(items[selectionParam].inventory.quantity);
-            printSmartDirect(" ");
-            printSmartDirect(itemNames[items[selectionParam].inventory.itemID]);
-            if (items[selectionParam].inventory.quantity > 1 && items[selectionParam].inventory.itemID != ITEM_NONE)
+            thePrint("%d$ | ", player.money);
+            if (player.inventory.quantity > 0 && player.inventory.itemID != ITEM_NONE)
             {
-                printSmartDirect("s");
-            }
-            if (player.inventory.itemID != ITEM_NONE)
-                goto dropMsg;
-        }
-        else if (selectionType == SELECTION_NPC)
-        {
-            if (npcs[selectionParam].inventory.itemID == ITEM_NONE || npcs[selectionParam].inventory.itemID == player.inventory.itemID)
-            {
-                printSmartDirect("\nR: give ");
-                printValDirect(player.inventory.quantity);
-                printSmartDirect(" ");
-                printSmartDirect(itemNames[player.inventory.itemID]);
-                if (player.inventory.quantity > 1 && player.inventory.itemID != ITEM_NONE)
-                {
-                    printSmartDirect("s");
-                }
-                printSmartDirect(" to ");
-                printSmartDirect(npcs[selectionParam].name);
-            }
-            if (player.inventory.itemID == ITEM_NONE || player.inventory.itemID == npcs[selectionParam].inventory.itemID)
-            {
-                printSmartDirect("\nL: take ");
-                printValDirect(npcs[selectionParam].inventory.quantity);
-                printSmartDirect(" ");
-                printSmartDirect(itemNames[npcs[selectionParam].inventory.itemID]);
-                if (npcs[selectionParam].inventory.quantity > 1 && npcs[selectionParam].inventory.itemID != ITEM_NONE)
-                {
-                    printSmartDirect("s");
-                }
-                printSmartDirect(" from ");
-                printSmartDirect(npcs[selectionParam].name);
-            }
-        }
-        else if (selectionType == SELECTION_TREE)
-        {
-            printSmartDirect("\n");
-            printSmartDirect(itemNames[trees[selectionParam].itemType]);
-            printSmartDirect(" tree");
-            if (trees[selectionParam].water > 0)
-            {
-                if (trees[selectionParam].level < 3)
-                {
-                    printSmartDirect("\nTime to grow: ");
-                    printValDirect(trees[selectionParam].ageTime + (int)TREE_TRANSITION_TIME * (3 - trees[selectionParam].level) - time(NULL) + 1);
-                    printSmartDirect(" seconds");
-                }
+                thePrint("Holding: %d %s%s",
+                         player.inventory.quantity,
+                         itemNames[player.inventory.itemID],
+                         player.inventory.quantity > 1 ? "s" : "");
             }
             else
             {
-                printSmartDirect("\nTree needs water!");
+                thePrint("Holding: %s", itemNames[player.inventory.itemID]);
             }
-            printSmartDirect("\nWater: ");
-            printValDirect(trees[selectionParam].water);
-            printSmartDirect("L / ");
-            printValDirect((trees[selectionParam].level + 1) * (int)TREE_TRANSITION_TIME / 4);
-            printSmartDirect("L");
-            if (trees[selectionParam].inventory.quantity > 0)
+
+            thePrint("\n");
+
+            if (selectionType == SELECTION_ITEM)
             {
-                printSmartDirect("\n\nL: harvest ");
-                printValDirect(trees[selectionParam].inventory.quantity);
-                printSmartDirect(" ");
-                printSmartDirect(itemNames[trees[selectionParam].inventory.itemID]);
-                if (trees[selectionParam].inventory.quantity > 1 && trees[selectionParam].inventory.itemID != ITEM_NONE)
+                thePrint("\nL: pickup %d %s%s",
+                         items[selectionParam].inventory.quantity,
+                         itemNames[items[selectionParam].inventory.itemID],
+                         items[selectionParam].inventory.quantity > 1 && items[selectionParam].inventory.itemID != ITEM_NONE ? "s" : "");
+                if (player.inventory.itemID != ITEM_NONE)
+                    goto dropMsg;
+            }
+            else if (selectionType == SELECTION_NPC)
+            {
+                if (npcs[selectionParam].inventory.itemID == ITEM_NONE || npcs[selectionParam].inventory.itemID == player.inventory.itemID)
                 {
-                    printSmartDirect("s");
+                    thePrint("\nR: give %d %s%s to %s",
+                             player.inventory.quantity,
+                             itemNames[player.inventory.itemID],
+                             player.inventory.quantity > 1 && player.inventory.itemID != ITEM_NONE ? "s" : "",
+                             npcs[selectionParam].name);
                 }
-                printSmartDirect(" from the tree");
+                if (player.inventory.itemID == ITEM_NONE || player.inventory.itemID == npcs[selectionParam].inventory.itemID)
+                {
+                    thePrint("\nL: take %d %s%s from %s",
+                             npcs[selectionParam].inventory.quantity,
+                             itemNames[npcs[selectionParam].inventory.itemID],
+                             npcs[selectionParam].inventory.quantity > 1 && npcs[selectionParam].inventory.itemID != ITEM_NONE ? "s" : "",
+                             npcs[selectionParam].name);
+                }
             }
-            if (trees[selectionParam].water < (trees[selectionParam].level + 1) * (int)TREE_TRANSITION_TIME / 4 && player.inventory.itemID == ITEM_WATERING_CAN)
+            else if (selectionType == SELECTION_TREE)
             {
-                printSmartDirect("\nHold R: water the tree");
+                thePrint("\n%s tree", itemNames[trees[selectionParam].itemType]);
+                if (trees[selectionParam].water > 0)
+                {
+                    if (trees[selectionParam].level < 3)
+                    {
+                        thePrint("\nTime to grow: %d seconds",
+                                 (int)(trees[selectionParam].ageTime + (int)TREE_TRANSITION_TIME * (3 - trees[selectionParam].level) - time(NULL) + 1));
+                    }
+                }
+                else
+                {
+                    thePrint("\nTree needs water!");
+                }
+                thePrint("\nWater: %dL / %dL",
+                         (int)trees[selectionParam].water,
+                         (trees[selectionParam].level + 1) * (int)TREE_TRANSITION_TIME / 4);
+                if (trees[selectionParam].inventory.quantity > 0)
+                {
+                    thePrint("\n\nL: harvest %d %s%s from the tree",
+                             trees[selectionParam].inventory.quantity,
+                             itemNames[trees[selectionParam].inventory.itemID],
+                             trees[selectionParam].inventory.quantity > 1 && trees[selectionParam].inventory.itemID != ITEM_NONE ? "s" : "");
+                }
+                if (trees[selectionParam].water < (trees[selectionParam].level + 1) * (int)TREE_TRANSITION_TIME / 4 && player.inventory.itemID == ITEM_WATERING_CAN)
+                {
+                    thePrint("\nHold R: water the tree");
+                }
             }
-        }
-        else if (player.inventory.itemID != ITEM_NONE)
-        {
-            if (player.inventory.itemID >= ITEM_APPLE_SEED_PACK && player.inventory.itemID <= ITEM_ORANGE_SEED_PACK)
+            else if (player.inventory.itemID != ITEM_NONE)
             {
-                printSmartDirect("\nL: plant ");
-                printSmartDirect(itemNames[player.inventory.itemID - ITEM_APPLE_SEED_PACK + ITEM_APPLE]);
-                printSmartDirect(" seed");
-                syncPlacement(tree_bin);
+                if (player.inventory.itemID >= ITEM_APPLE_SEED_PACK && player.inventory.itemID <= ITEM_ORANGE_SEED_PACK)
+                {
+                    thePrint("\nL: plant %s seed", itemNames[player.inventory.itemID - ITEM_APPLE_SEED_PACK + ITEM_APPLE]);
+                    syncPlacement(tree_bin);
+                }
+            dropMsg:
+                thePrint("\nR: drop %d %s%s",
+                         player.inventory.quantity,
+                         itemNames[player.inventory.itemID],
+                         player.inventory.quantity > 1 && player.inventory.itemID != ITEM_NONE ? "s" : "");
             }
-        dropMsg:
-            printSmartDirect("\nR: drop ");
-            printValDirect(player.inventory.quantity);
-            printSmartDirect(" ");
-            printSmartDirect(itemNames[player.inventory.itemID]);
-            if (player.inventory.quantity > 1 && player.inventory.itemID != ITEM_NONE)
-            {
-                printSmartDirect("s");
-            }
-        }
 
-        if (time(NULL) < alertTime)
-        {
-            printSmartDirect("\n\n");
-            printSmartDirect(alertText);
-        }
+            if (time(NULL) < alertTime)
+            {
+                thePrint("\n\n%s", alertText);
+            }
 
-        print(0, 11, "Mapster3D v" VERSION " by AzizBgBoss");
+            print(0, 11, "Mapster3D v" VERSION " by AzizBgBoss");
+        }
+        else
+        {
+            thePrint(menus[activeMenu].title);
+            for (int i = 0; i < menus[activeMenu].itemCount; i++)
+            {
+                thePrint("\n%s %s", i == menus[activeMenu].choice ? "-" : " ", menus[activeMenu].items[i]);
+            }
+
+            if (time(NULL) < alertTime)
+            {
+                thePrint("\n\n%s", alertText);
+            }
+
+            print(0, 11, "A: select     B: close");
+        }
 
         // ========================= Render Scene ====================================
 

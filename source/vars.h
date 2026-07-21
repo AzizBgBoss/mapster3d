@@ -33,9 +33,10 @@ typedef struct
     float pitch, yaw;
     float speed;
     Inventory inventory;
+    int32_t money;
 } Player;
 
-Player player = {0, 0, 0, 0, 0, 0.02f, {ITEM_NONE, 0, -1}};
+Player player = {0, 0, 0, 0, 0, 0.02f, {ITEM_NONE, 0, -1}, 3};
 
 typedef struct
 {
@@ -64,6 +65,8 @@ typedef struct
     char name[16];
     Inventory inventory;
 } Npc;
+
+// TODO: NPCs have different stats
 
 Npc npcs[MAX_NPCS] = {0};
 

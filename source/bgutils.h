@@ -15,6 +15,12 @@ void BgSet4Tile(int x, int y, int tile)
 
 int cx, cy; // Current cursor position
 
+void setCursor(int x, int y)
+{
+    cx = x;
+    cy = y;
+}
+
 void clearPrint()
 {
     cx = 0;
@@ -134,4 +140,27 @@ void printSmart(int x, int y, const char *text)
 void printSmartDirect(const char *text)
 {
     printSmart(cx, cy, text);
+}
+
+#include <stdarg.h>
+
+void thePrint(const char *format, ...)
+{
+    char buffer[(SCREEN_HEIGHT / 16) * (SCREEN_WIDTH / 8)];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args); // vsnprintf, bounds-checked
+    va_end(args);
+    printSmartDirect(buffer);
+}
+
+void alert(const char *format, ...)
+{
+    char buffer[(SCREEN_HEIGHT / 16) * (SCREEN_WIDTH / 8)];
+    va_list args;
+    va_start(args, format);
+    vsnprintf(buffer, sizeof(buffer), format, args); // vsnprintf, bounds-checked
+    va_end(args);
+    strcpy(alertText, buffer);
+    alertTime = time(NULL) + 5;
 }

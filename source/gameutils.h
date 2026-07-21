@@ -331,7 +331,7 @@ void updateTree(Tree *tree, uint8_t id)
     }
 }
 
-bool createItem(float x, float z, float yaw, uint8_t itemID, uint8_t quantity)
+int createItem(float x, float z, float yaw, uint8_t itemID, uint8_t quantity)
 {
     for (int i = 0; i < MAX_ITEMS; i++)
     {
@@ -347,12 +347,12 @@ bool createItem(float x, float z, float yaw, uint8_t itemID, uint8_t quantity)
                 items[i].z = z;
                 items[i].inventory.itemID = itemID;
                 items[i].inventory.quantity = quantity;
-                return true;
+                return i;
             }
-            return false;
+            return -1;
         }
     }
-    return false;
+    return -1;
 }
 
 void destroyItem(int id)
@@ -370,7 +370,7 @@ void addItemQuantity(uint8_t id, uint8_t quantity)
     return;
 }
 
-bool spawnNpc(float x, float z)
+int spawnNpc(float x, float z)
 {
     for (int i = 0; i < MAX_NPCS; i++)
     {
@@ -389,12 +389,12 @@ bool spawnNpc(float x, float z)
                 npcs[i].inventory.quantity = 0;
                 npcs[i].inventory.modelID = -1;
                 strcpy(npcs[i].name, names[rando(0, NAMES)]);
-                return true;
+                return i;
             }
-            return false;
+            return -1;
         }
     }
-    return false;
+    return -1;
 }
 
 void updateNpc(Npc *npc, uint8_t id)
@@ -471,12 +471,6 @@ void setHighlightedModel(int id)
     highlightedModel = id;
 }
 
-void alert(const char *message)
-{
-    strcpy(alertText, message);
-    alertTime = time(NULL) + 5;
-}
-
 void syncPlacement(uint8_t *modelData)
 {
     if (placementModelID != -1 && placementModelData == modelData)
@@ -494,4 +488,12 @@ void syncPlacement(uint8_t *modelData)
 
     NE_ModelSetCoord(Scene.Model[placementModelID], px, py, pz);
     NE_ModelSetRot(Scene.Model[placementModelID], 0, RAD2ANG(player.yaw), 0);
+}
+
+bool playerPay(int32_t amount)
+{
+    if (player.money < amount)
+        return false;
+    player.money -= amount;
+    return true;
 }
